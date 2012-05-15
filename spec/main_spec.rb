@@ -4,7 +4,7 @@ require 'rack/test'
 set :environment, :test
 
 def app
-  Sinatra::Application
+  ConnectionRequestServer
 end
 
 describe 'base response' do
