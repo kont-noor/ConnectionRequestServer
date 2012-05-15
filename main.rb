@@ -1,7 +1,11 @@
 require 'sinatra'
 require 'yaml'
+require 'redis'
 
 class ConnectionRequestServer < Sinatra::Base
+  configure do
+    REDIS = Redis.new(:host => 'localhost', :port => 6379, :password => nil)
+  end
 
   post '/request_permission_to_connect' do
     response_code = request_permission_to_connect params
@@ -13,7 +17,7 @@ class ConnectionRequestServer < Sinatra::Base
 
   post '/disconnect' do
     disconnect params
-    'ok'
+    #'ok'
   end
 
   post '/heartbeat' do
@@ -45,6 +49,7 @@ class ConnectionRequestServer < Sinatra::Base
   end
 
   def disconnect param
+    REDIS.get('s')
   end
 
   def heartbeat param
