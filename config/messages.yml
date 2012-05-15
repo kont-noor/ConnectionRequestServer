@@ -1,0 +1,4 @@
+1: 'Approved'
+400: 'Sorry, your account is currently connected from another computer. You can use our service from multiple computers, but each account can only be connected to our network from one computer at a time. To connect from this computer now, please buy an additional account.'
+401: "Missing parameters. Sorry, we've made a note to fix this. Please try again and contact support if you continue to see this error."
+500: 'Sorry, unknown error. Please try again and contact support if you continue to see this error.'
