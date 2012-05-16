@@ -8,16 +8,15 @@ class ConnectionRequestServer < Sinatra::Base
   end
 
   post '/request_permission_to_connect' do
-    response_code = request_permission_to_connect params
-    content_type 'text/xml'
+    response_code = ConnectionRequestServer.request_permission_to_connect params
 
     message =  get_messages
-    erb :connection_response, :locals => {:code => response_code, :message => message[response_code]}
+    erb :connection_response, :locals => {:code => response_code, :message => message[response_code]}, :content_type => 'text/xml'
   end
 
   post '/disconnect' do
     disconnect params
-    #'ok'
+    'ok'
   end
 
   post '/heartbeat' do
@@ -34,13 +33,11 @@ class ConnectionRequestServer < Sinatra::Base
     YAML.load(messages_yaml)
   end
 
-  def request_permission_to_connect param
-    activation_code = param[:activation_code]
-    device_id = param[:device_id]
-    client_version = param[:client_version]
-    os_version = param[:os_version]
+  def self.request_permission_to_connect(param={})
+    param = {} unless param.is_a?(Hash)
+    param = {:activation_code => nil, :device_id => nil}.merge(param)
 
-    if (activation_code.nil? or device_id.nil?)
+    if (param[:activation_code].nil? or param[:device_id].nil? or param[:activation_code].empty? or param[:device_id].empty?)
       return 401
     else
       return 500
