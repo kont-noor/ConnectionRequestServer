@@ -1,5 +1,6 @@
 require_relative '../main'
 require 'rack/test'
+require 'nokogiri'
 
 set :environment, :test
 
@@ -35,23 +36,35 @@ describe 'base response' do
       post '/request_permission_to_connect'
     end
 
+    let(:xml){ Nokogiri::XML(last_response.body)}
+
     it "should response on connect request" do
       last_response.should be_ok
     end
 
-    it "should be an xml" do
+    it "content-type should be an xml" do
       last_response.header['Content-Type'].should =~ /text\/xml/
     end
+
+    it "should be a valid xml" do
+      pending "implement later"
+    end
   
-    it "should be a standard form" do
-      last_response.body.should =~ /\<connection_request_response\>\s*\<code\>.*?\<\/code\>\s*\<message\>.*?\<\/message\>\s*\<\/connection_request_response\>/ims
+    it "should have message code" do
+      xml.css('connection_request_response code').should_not be_empty 
+    end
+
+    it "should have message text" do
+      xml.css('connection_request_response message').should_not be_empty
     end
   end
 end
 
 describe "permission to connect" do
   describe "return 1 (approved)" do
-    pending "when approved the connection"
+    it "when approved the connection" do
+      pending "implement later"
+    end
   end
 
   describe "return 401 (missing parameters)" do
@@ -85,6 +98,8 @@ describe "permission to connect" do
   end
 
   describe "return 500" do
-    pending "on unknown error"
+    it "on unknown error" do
+      pending "what unknown error?"
+    end
   end
 end

@@ -9,6 +9,7 @@ GEM
     diff-lcs (1.1.3)
     eventmachine (0.12.10)
     ffi (1.0.11)
+    nokogiri (1.5.2)
     rack (1.4.1)
     rack-protection (1.2.0)
       rack
@@ -42,6 +43,7 @@ DEPENDENCIES
   ZenTest
   autotest-fsevent
   autotest-growl
+  nokogiri
   rack
   rack-test
   redis

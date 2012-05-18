@@ -11,3 +11,4 @@ gem "autotest-growl"
 gem "autotest-fsevent"
 
 gem "redis"
+gem "nokogiri"
