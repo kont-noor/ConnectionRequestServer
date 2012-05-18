@@ -49,7 +49,7 @@ describe 'base response' do
     it "should be a valid xml" do
       pending "implement later"
     end
-  
+
     it "should have message code" do
       xml.css('connection_request_response code').should_not be_empty 
     end
