@@ -4,7 +4,9 @@ require 'redis'
 
 class ConnectionRequestServer < Sinatra::Base
   configure do
-    REDIS = Redis.new(:host => 'localhost', :port => 6379, :password => nil)
+    yaml = File.read(File.dirname(__FILE__) + '/config/redis.yml')
+    redis_settings = YAML.load(yaml)
+    REDIS = Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
   end
 
   post '/request_permission_to_connect' do
@@ -40,9 +42,26 @@ class ConnectionRequestServer < Sinatra::Base
     if (param[:activation_code].nil? or param[:device_id].nil? or param[:activation_code].empty? or param[:device_id].empty?)
       return 401
     else
-      return 500
+      return 400 if self.user_connected?(param[:activation_code], param[:device_id])
+      return self.connect_user(param[:activation_code], param[:device_id]) ? 1 : 500
     end
+  end
 
+  def self.user_connected? activation_code, device_id
+    #REDIS.hset(1, 1000, 100)
+    account_info = REDIS.hget(activation_code.to_i/1000, activation_code)
+    return false if account_info.nil?
+    return account_info != device_id 
+  end
+
+  def self.connect_user activation_code, device_id
+    begin
+      REDIS.hset(activation_code.to_i/1000, activation_code, device_id)
+      return true
+    resque Exception => e
+      #TODO: add exception to log
+      return false
+    end
   end
 
   def disconnect param

@@ -61,9 +61,39 @@ describe 'base response' do
 end
 
 describe "permission to connect" do
+  let(:redis) do
+    yaml = File.read(File.dirname(__FILE__) + '/../config/redis.yml')
+    redis_settings = YAML.load(yaml)
+    Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
+  end
+
   describe "return 1 (approved)" do
+    before(:each) do
+      redis.del(1)
+    end
+
     it "when approved the connection" do
-      pending "implement later"
+      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'}).should == 1
+    end
+
+    it "when user connected from the same device" do
+      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
+      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'}).should == 1
+    end
+
+    it "when disconnected by uptime" do
+      pending "implement heartbeat and connection time first"
+    end
+  end
+
+  describe "return 400 (user already connected)" do
+    before(:each) do
+      redis.del(1)
+      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
+    end
+
+    it "when user already connected from another device" do
+      app.request_permission_to_connect({:device_id => '3', :activation_code => '1000'}).should == 400
     end
   end
 
