@@ -3,10 +3,18 @@ require 'yaml'
 require 'redis'
 
 class ConnectionRequestServer < Sinatra::Base
+
+  @error = nil
+
   configure do
     yaml = File.read(File.dirname(__FILE__) + '/config/redis.yml')
     redis_settings = YAML.load(yaml)
-    REDIS = Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
+    begin
+      REDIS = Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
+    rescue Exception => e
+      #TODO: add exception to log
+      @error = e
+    end
   end
 
   post '/request_permission_to_connect' do
@@ -36,6 +44,7 @@ class ConnectionRequestServer < Sinatra::Base
   end
 
   def self.request_permission_to_connect(param={})
+    return 500 unless @error.nil?
     param = {} unless param.is_a?(Hash)
     param = {:activation_code => nil, :device_id => nil}.merge(param)
 
@@ -49,23 +58,27 @@ class ConnectionRequestServer < Sinatra::Base
 
   def self.user_connected? activation_code, device_id
     #REDIS.hset(1, 1000, 100)
-    account_info = REDIS.hget(activation_code.to_i/1000, activation_code)
+    account_info = REDIS.hget("connections:#{self.get_hash_name(activation_code)}", activation_code)
     return false if account_info.nil?
     return account_info != device_id 
   end
 
   def self.connect_user activation_code, device_id
     begin
-      REDIS.hset(activation_code.to_i/1000, activation_code, device_id)
+      REDIS.hset("connections:#{self.get_hash_name(activation_code)}", activation_code, device_id)
       return true
-    resque Exception => e
+    rescue Exception => e
       #TODO: add exception to log
       return false
     end
   end
 
+  def self.get_hash_name code
+    code.to_i/1000
+  end
+
   def disconnect param
-    REDIS.get('s')
+    #REDIS.get('s')
   end
 
   def heartbeat param

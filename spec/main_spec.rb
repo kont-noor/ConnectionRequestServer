@@ -69,7 +69,7 @@ describe "permission to connect" do
 
   describe "return 1 (approved)" do
     before(:each) do
-      redis.del(1)
+      redis.del('connections:1')
     end
 
     it "when approved the connection" do
@@ -88,7 +88,7 @@ describe "permission to connect" do
 
   describe "return 400 (user already connected)" do
     before(:each) do
-      redis.del(1)
+      redis.del('connections:1')
       app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
     end
 
