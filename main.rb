@@ -1,10 +1,12 @@
 require 'sinatra'
 require 'yaml'
 require 'redis'
+require 'json'
 
 class ConnectionRequestServer < Sinatra::Base
 
   @error = nil
+  CONNECTION_PERIOD = 10000000
 
   configure do
     yaml = File.read(File.dirname(__FILE__) + '/config/redis.yml')
@@ -57,15 +59,15 @@ class ConnectionRequestServer < Sinatra::Base
   end
 
   def self.user_connected? activation_code, device_id
-    #REDIS.hset(1, 1000, 100)
     account_info = REDIS.hget("connections:#{self.get_hash_name(activation_code)}", activation_code)
     return false if account_info.nil?
-    return account_info != device_id 
+    account_info = JSON.parse(account_info)
+    return account_info['device_id'] != device_id || Time.now.to_i - account_info['connection_time'].to_i > CONNECTION_PERIOD
   end
 
   def self.connect_user activation_code, device_id
     begin
-      REDIS.hset("connections:#{self.get_hash_name(activation_code)}", activation_code, device_id)
+      REDIS.hset("connections:#{self.get_hash_name(activation_code)}", activation_code, {:device_id => device_id, :connection_time => Time.now.to_i}.to_json)
       return true
     rescue Exception => e
       #TODO: add exception to log
@@ -73,14 +75,17 @@ class ConnectionRequestServer < Sinatra::Base
     end
   end
 
+  def disconnect param
+    unless param[:activation_code].nil?
+      REDIS.hdel("connections:#{self.get_hash_name(param[:activation_code])}", param[:activation_code])
+    end
+  end
+
   def self.get_hash_name code
     code.to_i/1000
   end
 
-  def disconnect param
-    #REDIS.get('s')
-  end
-
   def heartbeat param
+    #TODO: add connection time for heartbeat
   end
 end

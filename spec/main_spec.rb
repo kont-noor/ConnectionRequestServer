@@ -67,6 +67,10 @@ describe "permission to connect" do
     Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
   end
 
+  #let(:crs) do
+  #  ConnectionRequestServer.new
+  #end
+
   describe "return 1 (approved)" do
     before(:each) do
       redis.del('connections:1')
@@ -82,7 +86,9 @@ describe "permission to connect" do
     end
 
     it "when disconnected by uptime" do
-      pending "implement heartbeat and connection time first"
+      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
+      sleep 11
+      app.request_permission_to_connect({:device_id => '3', :activation_code => '1000'})
     end
   end
 
