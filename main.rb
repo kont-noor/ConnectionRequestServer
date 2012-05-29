@@ -6,7 +6,7 @@ require 'json'
 class ConnectionRequestServer < Sinatra::Base
 
   @error = nil
-  CONNECTION_PERIOD = 10000000
+  CONNECTION_PERIOD = 2 #seconds
 
   configure do
     yaml = File.read(File.dirname(__FILE__) + '/config/redis.yml')
@@ -27,7 +27,7 @@ class ConnectionRequestServer < Sinatra::Base
   end
 
   post '/disconnect' do
-    disconnect params
+    ConnectionRequestServer.disconnect params
     'ok'
   end
 
@@ -48,13 +48,13 @@ class ConnectionRequestServer < Sinatra::Base
   def self.request_permission_to_connect(param={})
     return 500 unless @error.nil?
     param = {} unless param.is_a?(Hash)
-    param = {:activation_code => nil, :device_id => nil}.merge(param)
+    param = {'activation_code' => nil, 'device_id' => nil}.merge(param)
 
-    if (param[:activation_code].nil? or param[:device_id].nil? or param[:activation_code].empty? or param[:device_id].empty?)
+    if (param['activation_code'].nil? or param['device_id'].nil? or param['activation_code'].empty? or param['device_id'].empty?)
       return 401
     else
-      return 400 if self.user_connected?(param[:activation_code], param[:device_id])
-      return self.connect_user(param[:activation_code], param[:device_id]) ? 1 : 500
+      return 400 if self.user_connected?(param['activation_code'], param['device_id'])
+      return self.connect_user(param['activation_code'], param['device_id']) ? 1 : 500
     end
   end
 
@@ -62,7 +62,7 @@ class ConnectionRequestServer < Sinatra::Base
     account_info = REDIS.hget("connections:#{self.get_hash_name(activation_code)}", activation_code)
     return false if account_info.nil?
     account_info = JSON.parse(account_info)
-    return account_info['device_id'] != device_id || Time.now.to_i - account_info['connection_time'].to_i > CONNECTION_PERIOD
+    return !(account_info['device_id'].eql? device_id) && (Time.now.to_i - account_info['connection_time'].to_i) < CONNECTION_PERIOD
   end
 
   def self.connect_user activation_code, device_id
@@ -75,9 +75,9 @@ class ConnectionRequestServer < Sinatra::Base
     end
   end
 
-  def disconnect param
-    unless param[:activation_code].nil?
-      REDIS.hdel("connections:#{self.get_hash_name(param[:activation_code])}", param[:activation_code])
+  def self.disconnect param
+    unless param['activation_code'].nil?
+      REDIS.hdel("connections:#{self.get_hash_name(param['activation_code'])}", param['activation_code'])
     end
   end
 

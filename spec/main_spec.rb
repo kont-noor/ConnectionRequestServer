@@ -51,7 +51,7 @@ describe 'base response' do
     end
 
     it "should have message code" do
-      xml.css('connection_request_response code').should_not be_empty 
+      xml.css('connection_request_response code').should_not be_empty
     end
 
     it "should have message text" do
@@ -61,75 +61,139 @@ describe 'base response' do
 end
 
 describe "permission to connect" do
+  include Rack::Test::Methods
+
   let(:redis) do
     yaml = File.read(File.dirname(__FILE__) + '/../config/redis.yml')
     redis_settings = YAML.load(yaml)
     Redis.new(:host => redis_settings['host'], :port => redis_settings['port'], :password => redis_settings['password'])
   end
 
-  #let(:crs) do
-  #  ConnectionRequestServer.new
-  #end
+  let(:device1) {{'device_id' => '1', 'activation_code' => '1000'}}
+  let(:device2) {{'device_id' => '3', 'activation_code' => '1000'}}
+  let(:xml){ Nokogiri::XML(last_response.body)}
+  let(:message){ xml.at_css('connection_request_response code').content}
 
   describe "return 1 (approved)" do
     before(:each) do
       redis.del('connections:1')
     end
 
-    it "when approved the connection" do
-      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'}).should == 1
+    before(:each, :turn => :request) do
+      post '/request_permission_to_connect', device1
     end
 
-    it "when user connected from the same device" do
-      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
-      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'}).should == 1
+    describe "when approved the connection" do
+      it "for method" do
+        app.request_permission_to_connect(device1).should == 1
+      end
+
+      it "for request", :turn => :request do
+        message.should == '1'
+      end
     end
 
-    it "when disconnected by uptime" do
-      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
-      sleep 11
-      app.request_permission_to_connect({:device_id => '3', :activation_code => '1000'})
+    describe "when user connected from the same device" do
+      it "for method" do
+        app.request_permission_to_connect(device1)
+        app.request_permission_to_connect(device1).should == 1
+      end
+
+      it "for request", :turn => :request do
+        post '/request_permission_to_connect', device1
+        message.should == '1'
+      end
+    end
+
+    describe "when disconnected by uptime" do
+      it "for method" do
+        app.request_permission_to_connect(device1)
+        sleep app::CONNECTION_PERIOD * 2
+        app.request_permission_to_connect(device2).should == 1
+      end
+
+      it "for request", :turn => :request do
+        sleep app::CONNECTION_PERIOD * 2
+        post '/request_permission_to_connect', device2
+        message.should == '1'
+      end
+    end
+
+    describe "when disconnected by device" do
+      it "for method" do
+        app.request_permission_to_connect(device1)
+        app.disconnect(device1)
+        app.request_permission_to_connect(device2).should == 1
+      end
+
+      it "for request", :turn => :request do
+        post '/disconnect', device1
+        post '/request_permission_to_connect', device2
+        message.should == '1'
+      end
     end
   end
 
   describe "return 400 (user already connected)" do
     before(:each) do
       redis.del('connections:1')
-      app.request_permission_to_connect({:device_id => '1', :activation_code => '1000'})
     end
 
-    it "when user already connected from another device" do
-      app.request_permission_to_connect({:device_id => '3', :activation_code => '1000'}).should == 400
+    before(:each, :turn => :method) do
+      app.request_permission_to_connect(device1)
+    end
+
+    before(:each, :turn => :request) do
+      post '/request_permission_to_connect', device1
+    end
+
+    describe "when user already connected from another device" do
+      it "for method", :turn => :method do
+        app.request_permission_to_connect(device2).should == 400
+      end
+
+      it "for request", :turn => :request do
+        post '/request_permission_to_connect', device2
+        message.should == '400'
+      end
+    end
+
+    describe "when not disconnected by uptime" do
+      it "for method", :turn => :method do
+        sleep app::CONNECTION_PERIOD / 2
+        app.request_permission_to_connect(device2).should == 400
+      end
+
+      it "for request", :turn => :request do
+        sleep app::CONNECTION_PERIOD / 2
+        post '/request_permission_to_connect', device2
+        message.should == '400'
+      end
     end
   end
 
   describe "return 401 (missing parameters)" do
-    it "on parameters missing" do
-      app.request_permission_to_connect.should == 401
-    end
+    invalid_requests = {
+      "parameters missing" => nil,
+      "parameters hash is empty" => {},
+      "parameter is not a hash" => '1',
+      "activation_code is missing" => {'device_id' => '300'},
+      "activation_code is empty" => {'device_id' => '300', 'activation_code' => ''},
+      "device_id is empty" => {'device_id' => '', 'activation_code' => '300'},
+      "device_id is missing" => {'activation_code' => '300'}
+    }
 
-    it "when parameters hash is empty" do
-      app.request_permission_to_connect({}).should == 401
-    end
+    invalid_requests.each_pair do |key, value|
+      describe "when #{key}" do
+        it "for method" do
+          app.request_permission_to_connect(value).should == 401
+        end
 
-    it "when parameter is not a hash" do
-      app.request_permission_to_connect(1).should == 401
-    end
-
-    it "when activation_code is missing" do
-      app.request_permission_to_connect({:device_id => '300'}).should == 401
-    end
-
-    it "when activation_code is empty" do
-      app.request_permission_to_connect({:device_id => '300', :activation_code => ''}).should == 401
-    end
-
-    it "when device_id is empty" do
-      app.request_permission_to_connect({:device_id => '', :activation_code => '300'}).should == 401
-    end
-
-    it "when device_id is missing" do
-      app.request_permission_to_connect({:activation_code => '300'}).should == 401
+        it "for request" do
+          post '/request_permission_to_connect', value
+          message.should == '401'
+        end
+      end
     end
   end
 
