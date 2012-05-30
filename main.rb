@@ -19,25 +19,18 @@ class ConnectionRequestServer < Sinatra::Base
     end
   end
 
-  post '/request_permission_to_connect' do
-    response_code = ConnectionRequestServer.request_permission_to_connect params
+  post '/:method' do
+    method = params[:method]
+    return 404 unless ConnectionRequestServer.respond_to?("api_#{method}")
+    response_code = ConnectionRequestServer.send("api_#{method}", params)
 
+    return erb :default unless File.exist?("#{File.dirname(__FILE__)}/views/#{method}.erb")
     message =  get_messages
-    erb :connection_response, :locals => {:code => response_code, :message => message[response_code]}, :content_type => 'text/xml'
-  end
-
-  post '/disconnect' do
-    ConnectionRequestServer.disconnect params
-    'ok'
-  end
-
-  post '/heartbeat' do
-    heartbeat params
-    'ok'
+    erb method.to_sym, :locals => {:code => response_code, :message => message[response_code]}, :content_type => 'text/xml'
   end
 
   error 400..510 do
-    '404'
+    erb :'404'
   end
 
   def get_messages
@@ -45,7 +38,7 @@ class ConnectionRequestServer < Sinatra::Base
     YAML.load(messages_yaml)
   end
 
-  def self.request_permission_to_connect(param={})
+  def self.api_request_permission_to_connect(param={})
     return 500 unless @error.nil?
     param = {} unless param.is_a?(Hash)
     param = {'activation_code' => nil, 'device_id' => nil}.merge(param)
@@ -75,7 +68,7 @@ class ConnectionRequestServer < Sinatra::Base
     end
   end
 
-  def self.disconnect param
+  def self.api_disconnect param
     unless param['activation_code'].nil?
       REDIS.hdel("connections:#{self.get_hash_name(param['activation_code'])}", param['activation_code'])
     end
@@ -85,7 +78,7 @@ class ConnectionRequestServer < Sinatra::Base
     code.to_i/1000
   end
 
-  def heartbeat param
+  def self.api_heartbeat param
     #TODO: add connection time for heartbeat
   end
 end

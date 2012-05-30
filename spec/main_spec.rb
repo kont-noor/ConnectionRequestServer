@@ -74,6 +74,10 @@ describe "permission to connect" do
   let(:xml){ Nokogiri::XML(last_response.body)}
   let(:message){ xml.at_css('connection_request_response code').content}
 
+  def permission dev
+    app.api_request_permission_to_connect(dev)
+  end
+
   describe "return 1 (approved)" do
     before(:each) do
       redis.del('connections:1')
@@ -85,7 +89,7 @@ describe "permission to connect" do
 
     describe "when approved the connection" do
       it "for method" do
-        app.request_permission_to_connect(device1).should == 1
+        permission(device1).should == 1
       end
 
       it "for request", :turn => :request do
@@ -95,8 +99,8 @@ describe "permission to connect" do
 
     describe "when user connected from the same device" do
       it "for method" do
-        app.request_permission_to_connect(device1)
-        app.request_permission_to_connect(device1).should == 1
+        permission(device1)
+        permission(device1).should == 1
       end
 
       it "for request", :turn => :request do
@@ -107,9 +111,9 @@ describe "permission to connect" do
 
     describe "when disconnected by uptime" do
       it "for method" do
-        app.request_permission_to_connect(device1)
+        permission(device1)
         sleep app::CONNECTION_PERIOD * 2
-        app.request_permission_to_connect(device2).should == 1
+        permission(device2).should == 1
       end
 
       it "for request", :turn => :request do
@@ -121,9 +125,9 @@ describe "permission to connect" do
 
     describe "when disconnected by device" do
       it "for method" do
-        app.request_permission_to_connect(device1)
-        app.disconnect(device1)
-        app.request_permission_to_connect(device2).should == 1
+        permission(device1)
+        app.api_disconnect(device1)
+        permission(device2).should == 1
       end
 
       it "for request", :turn => :request do
@@ -140,7 +144,7 @@ describe "permission to connect" do
     end
 
     before(:each, :turn => :method) do
-      app.request_permission_to_connect(device1)
+      permission(device1)
     end
 
     before(:each, :turn => :request) do
@@ -149,7 +153,7 @@ describe "permission to connect" do
 
     describe "when user already connected from another device" do
       it "for method", :turn => :method do
-        app.request_permission_to_connect(device2).should == 400
+        permission(device2).should == 400
       end
 
       it "for request", :turn => :request do
@@ -161,7 +165,7 @@ describe "permission to connect" do
     describe "when not disconnected by uptime" do
       it "for method", :turn => :method do
         sleep app::CONNECTION_PERIOD / 2
-        app.request_permission_to_connect(device2).should == 400
+        permission(device2).should == 400
       end
 
       it "for request", :turn => :request do
@@ -186,7 +190,7 @@ describe "permission to connect" do
     invalid_requests.each_pair do |key, value|
       describe "when #{key}" do
         it "for method" do
-          app.request_permission_to_connect(value).should == 401
+          permission(value).should == 401
         end
 
         it "for request" do
