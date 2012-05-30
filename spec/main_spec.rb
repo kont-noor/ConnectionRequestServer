@@ -174,6 +174,25 @@ describe "permission to connect" do
         message.should == '400'
       end
     end
+
+    describe "when heartbeat used" do
+      it "for method", :turn => :method do
+        3.times do
+          sleep app::CONNECTION_PERIOD / 2
+          app.api_heartbeat device1
+        end
+        permission(device2).should == 400
+      end
+
+      it "for request", :turn => :request do
+        3.times do
+          sleep app::CONNECTION_PERIOD / 2
+          post '/heartbeat', device1
+        end
+        post '/request_permission_to_connect', device2
+        message.should == '400'
+      end
+    end
   end
 
   describe "return 401 (missing parameters)" do

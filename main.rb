@@ -43,7 +43,10 @@ class ConnectionRequestServer < Sinatra::Base
     param = {} unless param.is_a?(Hash)
     param = {'activation_code' => nil, 'device_id' => nil}.merge(param)
 
-    if (param['activation_code'].nil? or param['device_id'].nil? or param['activation_code'].empty? or param['device_id'].empty?)
+    if (param['activation_code'].nil? or
+        param['device_id'].nil? or
+        param['activation_code'].empty? or
+        param['device_id'].empty?)
       return 401
     else
       return 400 if self.user_connected?(param['activation_code'], param['device_id'])
@@ -55,12 +58,15 @@ class ConnectionRequestServer < Sinatra::Base
     account_info = REDIS.hget("connections:#{self.get_hash_name(activation_code)}", activation_code)
     return false if account_info.nil?
     account_info = JSON.parse(account_info)
-    return !(account_info['device_id'].eql? device_id) && (Time.now.to_i - account_info['connection_time'].to_i) < CONNECTION_PERIOD
+    return !(account_info['device_id'].eql? device_id) &&
+            (Time.now.to_i - account_info['connection_time'].to_i) < CONNECTION_PERIOD
   end
 
   def self.connect_user activation_code, device_id
     begin
-      REDIS.hset("connections:#{self.get_hash_name(activation_code)}", activation_code, {:device_id => device_id, :connection_time => Time.now.to_i}.to_json)
+      REDIS.hset("connections:#{self.get_hash_name(activation_code)}",
+                 activation_code,
+                 {:device_id => device_id, :connection_time => Time.now.to_i}.to_json)
       return true
     rescue Exception => e
       #TODO: add exception to log
@@ -80,5 +86,12 @@ class ConnectionRequestServer < Sinatra::Base
 
   def self.api_heartbeat param
     #TODO: add connection time for heartbeat
+    account_info = REDIS.hget("connections:#{self.get_hash_name(param['activation_code'])}", param['activation_code'])
+    return false if account_info.nil?
+    account_info = JSON.parse(account_info)
+    REDIS.hset("connections:#{self.get_hash_name(param['activation_code'])}",
+               param['activation_code'],
+               {:device_id => account_info['device_id'],
+                :connection_time => Time.now.to_i}.to_json) if account_info['device_id'] == param['device_id']
   end
 end
