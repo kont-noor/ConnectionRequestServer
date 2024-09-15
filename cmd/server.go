@@ -7,5 +7,6 @@ import (
 
 func main() {
 	fmt.Println("Hello, World!")
-	server.RunServer()
+	server := server.New(server.Config{Port: "3000"})
+	server.Run()
 }
