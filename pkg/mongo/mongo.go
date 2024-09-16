@@ -45,8 +45,12 @@ func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*Connectio
 	}
 
 	var connection Connection
-	if err = cursor.Decode(&connection); err != nil {
-		return nil, fmt.Errorf("failed to decode connection: %v", err)
+	if cursor.Next(context.Background()) {
+		if err = cursor.Decode(&connection); err != nil {
+			return nil, fmt.Errorf("failed to decode connection: %v", err)
+		}
+	} else {
+		return nil, fmt.Errorf("no connection found for user ID %s and device ID %s", UserID, DeviceID)
 	}
 
 	return &connection, nil
