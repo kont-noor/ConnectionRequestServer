@@ -35,7 +35,7 @@ func New(config Config) *Server {
 
 func (s *Server) Run() {
 	http.HandleFunc("/connect", s.connectHandler)
-	http.HandleFunc("/disconnect", disconnectHandler)
+	http.HandleFunc("/disconnect", s.disconnectHandler)
 	http.HandleFunc("/heartbeat", heartbeatHandler)
 
 	fmt.Println("Starting server on :" + s.port)
@@ -53,6 +53,7 @@ func (s *Server) connectHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		connection, err := s.mongo.FindActiveConnection(params.UserID, params.DeviceID)
+		// TODO: this also rises the error if connection is not found; need to fix this
 		//if err != nil {
 		//	http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)
 		//	return
@@ -96,9 +97,30 @@ func parseRequest(r *http.Request, params *requestParams) error {
 	return json.NewDecoder(r.Body).Decode(params)
 }
 
-func disconnectHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) disconnectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		fmt.Fprintf(w, "Handler 2: POST request received")
+		var params requestParams
+		if err := parseRequest(r, &params); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		connection, err := s.mongo.FindActiveConnection(params.UserID, params.DeviceID)
+		if err != nil {
+			http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)
+			return
+		} else if connection == nil {
+			http.Error(w, "Connection not found", http.StatusNotFound)
+			return
+		} else {
+			err = s.mongo.DeleteConnection(params.UserID, params.DeviceID)
+			if err != nil {
+				http.Error(w, "Failed to delete connection"+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			fmt.Fprintf(w, "Connection deleted; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
+		}
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
