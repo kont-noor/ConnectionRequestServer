@@ -1,4 +1,4 @@
-package main
+package serverapp
 
 import (
 	"connection_request_server/pkg/mongo"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func main() {
+func Run() {
 	mongoConfig := mongo.Config{Url: "mongodb://mongo:mongo@localhost:27017"}
 	mongoClient, err := mongo.New(mongoConfig)
 	if err != nil {
