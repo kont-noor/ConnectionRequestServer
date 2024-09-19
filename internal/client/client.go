@@ -16,10 +16,11 @@ type Config struct {
 }
 
 type Client struct {
-	host     string
-	userID   string
-	deviceID string
-	payload  []byte
+	host              string
+	userID            string
+	deviceID          string
+	payload           []byte
+	stopHeartbeatChan chan struct{}
 }
 
 func New(config Config) *Client {
@@ -74,9 +75,28 @@ func (c *Client) heartbeat() {
 	}
 }
 
-func (c *Client) initHeartbeat() {}
+func (c *Client) initHeartbeat() {
+	c.stopHeartbeatChan = make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 
-func (c *Client) stopHeartbeat() {}
+		for {
+			select {
+			case <-ticker.C:
+				c.heartbeat()
+			case <-c.stopHeartbeatChan:
+				return
+			}
+		}
+	}()
+}
+
+func (c *Client) stopHeartbeat() {
+	if c.stopHeartbeatChan != nil {
+		close(c.stopHeartbeatChan)
+	}
+}
 
 func (c *Client) getPayload() ([]byte, error) {
 	if c.payload != nil {
