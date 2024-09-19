@@ -45,6 +45,8 @@ func (s *Server) Run() {
 }
 
 func (s *Server) connectHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Path)
+	fmt.Println(r.Method)
 	if r.Method == http.MethodPost {
 		var params requestParams
 		if err := parseRequest(r, &params); err != nil {
@@ -89,6 +91,7 @@ func (s *Server) connectHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Fprintf(w, "Connection approved; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
 	} else {
+		fmt.Println("Invalid request method")
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 }
@@ -98,6 +101,8 @@ func parseRequest(r *http.Request, params *requestParams) error {
 }
 
 func (s *Server) disconnectHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Path)
+	fmt.Println(r.Method)
 	if r.Method == http.MethodPost {
 		var params requestParams
 		if err := parseRequest(r, &params); err != nil {
@@ -122,6 +127,7 @@ func (s *Server) disconnectHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Connection deleted; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
 		}
 	} else {
+		fmt.Println("Invalid request method")
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 }
