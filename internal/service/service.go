@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const ttl time.Duration = 5000 * time.Millisecond
+
 type requestParams struct {
 	UserID   string `json:"user_id"`
 	DeviceID string `json:"device_id"`
@@ -44,17 +46,8 @@ func (s *service) Connect(w http.ResponseWriter, r *http.Request) {
 	//}
 
 	if connection != nil {
-		if connection.LastHeartbeat.Time().Before(time.Now().Add(-5 * time.Second)) {
-			fmt.Fprintf(w, "Connection expired; User ID: %s, Device ID: %s, Last heartbeat: %s", params.UserID, params.DeviceID, connection.LastHeartbeat.Time().String())
-			err := s.mongo.DeleteConnection(params.UserID, params.DeviceID)
-			if err != nil {
-				http.Error(w, "Failed to delete connection", http.StatusInternalServerError)
-				return
-			}
-		} else {
-			http.Error(w, "Connection already exists", http.StatusConflict)
-			return
-		}
+		http.Error(w, "Connection already exists", http.StatusConflict)
+		return
 	}
 
 	newConnection := mongo.Connection{
@@ -81,22 +74,13 @@ func (s *service) Disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, err := s.mongo.FindActiveConnection(params.UserID, params.DeviceID)
+	err := s.mongo.DeleteConnection(params.UserID, params.DeviceID)
 	if err != nil {
-		http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to delete connection"+err.Error(), http.StatusInternalServerError)
 		return
-	} else if connection == nil {
-		http.Error(w, "Connection not found", http.StatusNotFound)
-		return
-	} else {
-		err = s.mongo.DeleteConnection(params.UserID, params.DeviceID)
-		if err != nil {
-			http.Error(w, "Failed to delete connection"+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "Connection deleted; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
 	}
+
+	fmt.Fprintf(w, "Connection deleted; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
 }
 
 func (s *service) Heartbeat(w http.ResponseWriter, r *http.Request) {
@@ -106,31 +90,13 @@ func (s *service) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, err := s.mongo.FindActiveConnection(params.UserID, params.DeviceID)
+	err := s.mongo.HeartbeatConnection(params.UserID, params.DeviceID)
 	if err != nil {
-		http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to update connection"+err.Error(), http.StatusInternalServerError)
 		return
-	} else if connection == nil {
-		http.Error(w, "Connection not found", http.StatusNotFound)
-		return
-	} else {
-		if connection.LastHeartbeat.Time().Before(time.Now().Add(-5 * time.Second)) {
-			http.Error(w, "Connection expired", http.StatusConflict)
-			err = s.mongo.DeleteConnection(params.UserID, params.DeviceID)
-			if err != nil {
-				http.Error(w, "Failed to delete connection", http.StatusInternalServerError)
-				return
-			}
-		} else {
-			err = s.mongo.HeartbeatConnection(params.UserID, params.DeviceID)
-			if err != nil {
-				http.Error(w, "Failed to update connection"+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			fmt.Fprintf(w, "Heartbeat received; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
-		}
 	}
+
+	fmt.Fprintf(w, "Heartbeat received; User ID: %s, Device ID: %s", params.UserID, params.DeviceID)
 }
 
 func parseRequest(r *http.Request, params *requestParams) error {

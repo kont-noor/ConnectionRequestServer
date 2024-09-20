@@ -18,6 +18,7 @@ type Config struct {
 type Mongo struct {
 	client  *mongo.Client
 	context context.Context
+	ttl     time.Duration
 }
 
 func New(config Config) (*Mongo, error) {
@@ -29,6 +30,7 @@ func New(config Config) (*Mongo, error) {
 	return &Mongo{
 		client:  client,
 		context: context.Background(),
+		ttl:     time.Duration(5000 * time.Millisecond),
 	}, nil
 }
 
@@ -37,7 +39,7 @@ func (m *Mongo) Close() {
 }
 
 func (m *Mongo) FindUserConnection(UserID string) (*Connection, error) {
-	filter := bson.M{"user_id": UserID}
+	filter := bson.M{"user_id": UserID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	collection := m.client.Database("connections").Collection("connections")
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
@@ -57,7 +59,7 @@ func (m *Mongo) FindUserConnection(UserID string) (*Connection, error) {
 }
 
 func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*Connection, error) {
-	filter := bson.M{"user_id": UserID, "device_id": DeviceID}
+	filter := bson.M{"user_id": UserID, "device_id": DeviceID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	collection := m.client.Database("connections").Collection("connections")
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
@@ -89,7 +91,7 @@ func (m *Mongo) InsertConnection(connection Connection) error {
 func (m *Mongo) DeleteConnection(userID string, deviceID string) error {
 	filter := bson.M{"user_id": userID, "device_id": deviceID}
 	collection := m.client.Database("connections").Collection("connections")
-	_, err := collection.DeleteOne(context.Background(), filter)
+	_, err := collection.DeleteMany(context.Background(), filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete connection: %v", err)
 	}
@@ -98,7 +100,7 @@ func (m *Mongo) DeleteConnection(userID string, deviceID string) error {
 }
 
 func (m *Mongo) HeartbeatConnection(userID string, deviceID string) error {
-	filter := bson.M{"user_id": userID, "device_id": deviceID}
+	filter := bson.M{"user_id": userID, "device_id": deviceID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	update := bson.M{"$set": bson.M{"last_heartbeat": primitive.NewDateTimeFromTime(time.Now())}}
 	collection := m.client.Database("connections").Collection("connections")
 	_, err := collection.UpdateOne(context.Background(), filter, update)
