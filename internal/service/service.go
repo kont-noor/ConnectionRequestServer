@@ -36,7 +36,7 @@ func (s *service) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, _ := s.mongo.FindActiveConnection(params.UserID, params.DeviceID)
+	connection, _ := s.mongo.FindUserConnection(params.UserID)
 	// TODO: this also rises the error if connection is not found; need to fix this
 	//if err != nil {
 	//	http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)

@@ -36,6 +36,26 @@ func (m *Mongo) Close() {
 	m.client.Disconnect(m.context)
 }
 
+func (m *Mongo) FindUserConnection(UserID string) (*Connection, error) {
+	filter := bson.M{"user_id": UserID}
+	collection := m.client.Database("connections").Collection("connections")
+	cursor, err := collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find connection: %v", err)
+	}
+
+	var connection Connection
+	if cursor.Next(context.Background()) {
+		if err = cursor.Decode(&connection); err != nil {
+			return nil, fmt.Errorf("failed to decode connection: %v", err)
+		}
+	} else {
+		return nil, fmt.Errorf("no connection found for user ID %s", UserID)
+	}
+
+	return &connection, nil
+}
+
 func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*Connection, error) {
 	filter := bson.M{"user_id": UserID, "device_id": DeviceID}
 	collection := m.client.Database("connections").Collection("connections")
