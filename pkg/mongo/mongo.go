@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"connection_request_server/internal/domain"
 	"context"
 	"fmt"
 	"time"
@@ -38,7 +39,27 @@ func (m *Mongo) Close() {
 	m.client.Disconnect(m.context)
 }
 
-func (m *Mongo) FindUserConnection(UserID string) (*Connection, error) {
+func ConvertToMongoConnection(connection *domain.Connection) *Connection {
+	return &Connection{
+		ID:            primitive.NewObjectID(),
+		UserID:        primitive.Symbol(connection.UserID),
+		DeviceID:      primitive.Symbol(connection.DeviceID),
+		LastHeartbeat: primitive.NewDateTimeFromTime(connection.LastHeartbeat),
+		ConnectedAt:   primitive.NewDateTimeFromTime(connection.ConnectedAt),
+	}
+}
+
+func ConvertToDomainConnection(connection *Connection) *domain.Connection {
+	return &domain.Connection{
+		ID:            fmt.Sprintf("%s", connection.ID),
+		UserID:        fmt.Sprintf("%s", connection.UserID),
+		DeviceID:      fmt.Sprintf("%s", connection.DeviceID),
+		LastHeartbeat: connection.LastHeartbeat.Time(),
+		ConnectedAt:   connection.ConnectedAt.Time(),
+	}
+}
+
+func (m *Mongo) FindUserConnection(UserID string) (*domain.Connection, error) {
 	filter := bson.M{"user_id": UserID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	collection := m.client.Database("connections").Collection("connections")
 	cursor, err := collection.Find(context.Background(), filter)
@@ -55,10 +76,11 @@ func (m *Mongo) FindUserConnection(UserID string) (*Connection, error) {
 		return nil, fmt.Errorf("no connection found for user ID %s", UserID)
 	}
 
-	return &connection, nil
+	//return &connection, nil
+	return ConvertToDomainConnection(&connection), nil
 }
 
-func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*Connection, error) {
+func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*domain.Connection, error) {
 	filter := bson.M{"user_id": UserID, "device_id": DeviceID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	collection := m.client.Database("connections").Collection("connections")
 	cursor, err := collection.Find(context.Background(), filter)
@@ -75,12 +97,12 @@ func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*Connectio
 		return nil, fmt.Errorf("no connection found for user ID %s and device ID %s", UserID, DeviceID)
 	}
 
-	return &connection, nil
+	return ConvertToDomainConnection(&connection), nil
 }
 
-func (m *Mongo) InsertConnection(connection Connection) error {
+func (m *Mongo) InsertConnection(connection *domain.Connection) error {
 	collection := m.client.Database("connections").Collection("connections")
-	_, err := collection.InsertOne(context.Background(), connection)
+	_, err := collection.InsertOne(context.Background(), ConvertToMongoConnection(connection))
 	if err != nil {
 		return fmt.Errorf("failed to insert connection: %v", err)
 	}

@@ -1,16 +1,20 @@
 package service
 
 import (
-	"connection_request_server/pkg/mongo"
+	"connection_request_server/internal/domain"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const ttl time.Duration = 5000 * time.Millisecond
+type Repository interface {
+	FindUserConnection(UserID string) (*domain.Connection, error)
+	FindActiveConnection(UserID string, DomainID string) (*domain.Connection, error)
+	InsertConnection(connection *domain.Connection) error
+	DeleteConnection(UserID string, DeviceID string) error
+	HeartbeatConnection(UserID string, DeviceID string) error
+}
 
 type requestParams struct {
 	UserID   string `json:"user_id"`
@@ -18,16 +22,16 @@ type requestParams struct {
 }
 
 type service struct {
-	mongo *mongo.Mongo
+	repository Repository
 }
 
 type Config struct {
-	Mongo *mongo.Mongo
+	Repository Repository
 }
 
 func New(config Config) *service {
 	return &service{
-		mongo: config.Mongo,
+		repository: config.Repository,
 	}
 }
 
@@ -38,7 +42,7 @@ func (s *service) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, _ := s.mongo.FindUserConnection(params.UserID)
+	connection, _ := s.repository.FindUserConnection(params.UserID)
 	// TODO: this also rises the error if connection is not found; need to fix this
 	//if err != nil {
 	//	http.Error(w, "Failed to find connection"+err.Error(), http.StatusInternalServerError)
@@ -50,15 +54,14 @@ func (s *service) Connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newConnection := mongo.Connection{
-		ID:            primitive.NewObjectID(),
-		UserID:        primitive.Symbol(params.UserID),
-		DeviceID:      primitive.Symbol(params.DeviceID),
-		ConnectedAt:   primitive.NewDateTimeFromTime(time.Now()),
-		LastHeartbeat: primitive.NewDateTimeFromTime(time.Now()),
+	newConnection := domain.Connection{
+		UserID:        params.UserID,
+		DeviceID:      params.DeviceID,
+		ConnectedAt:   time.Now(),
+		LastHeartbeat: time.Now(),
 	}
 
-	err := s.mongo.InsertConnection(newConnection)
+	err := s.repository.InsertConnection(&newConnection)
 	if err != nil {
 		http.Error(w, "Failed to insert connection"+err.Error(), http.StatusInternalServerError)
 		return
@@ -74,7 +77,7 @@ func (s *service) Disconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.mongo.DeleteConnection(params.UserID, params.DeviceID)
+	err := s.repository.DeleteConnection(params.UserID, params.DeviceID)
 	if err != nil {
 		http.Error(w, "Failed to delete connection"+err.Error(), http.StatusInternalServerError)
 		return
@@ -90,7 +93,7 @@ func (s *service) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.mongo.HeartbeatConnection(params.UserID, params.DeviceID)
+	err := s.repository.HeartbeatConnection(params.UserID, params.DeviceID)
 	if err != nil {
 		http.Error(w, "Failed to update connection"+err.Error(), http.StatusInternalServerError)
 		return
