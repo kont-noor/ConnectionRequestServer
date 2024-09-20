@@ -10,8 +10,8 @@ func Run() {
 	fmt.Println("Init client app")
 	time.Sleep(4 * time.Second)
 
-	client1 := client.New(client.Config{Host: "http://localhost:3000", UserID: "10", DeviceID: "1"})
-	client2 := client.New(client.Config{Host: "http://localhost:3000", UserID: "10", DeviceID: "2"})
+	client1 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "1"})
+	client2 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "2"})
 	client1.Connect()
 	client2.Connect()
 
