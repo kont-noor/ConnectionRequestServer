@@ -2,16 +2,20 @@ package clientapp
 
 import (
 	"connection_request_server/internal/client"
-	"fmt"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func Run() {
-	fmt.Println("Init client app")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	logger.Info("Init client app")
 	time.Sleep(4 * time.Second)
 
-	client1 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "1"})
-	client2 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "2"})
+	client1 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "1", Log: logger})
+	client2 := client.New(client.Config{Host: "http://localhost:3000/api/v1", UserID: "15", DeviceID: "2", Log: logger})
 	client1.Connect()
 	client2.Connect()
 

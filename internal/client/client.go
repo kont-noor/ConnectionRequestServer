@@ -3,16 +3,18 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type Config struct {
 	Host     string
 	UserID   string
 	DeviceID string
+	Log      *zap.Logger
 }
 
 type Client struct {
@@ -21,6 +23,7 @@ type Client struct {
 	deviceID          string
 	payload           []byte
 	stopHeartbeatChan chan struct{}
+	log               *zap.Logger
 }
 
 func New(config Config) *Client {
@@ -28,20 +31,21 @@ func New(config Config) *Client {
 		host:     config.Host,
 		userID:   config.UserID,
 		deviceID: config.DeviceID,
+		log:      config.Log,
 	}
 }
 
 func (c *Client) Connect() {
 	code, err := c.sendRequest("/connect")
 	if err != nil {
-		fmt.Println("Error connecting:", err)
+		c.log.Sugar().Errorf("Error connecting: %v\n", err)
 		return
 	}
 	if code == http.StatusOK {
-		fmt.Println("Connected successfully")
+		c.log.Info("Connected successfully")
 		c.initHeartbeat()
 	} else {
-		fmt.Println("Failed to connect")
+		c.log.Error("Failed to connect")
 		return
 	}
 }
@@ -49,14 +53,14 @@ func (c *Client) Connect() {
 func (c *Client) Disconnect() {
 	code, err := c.sendRequest("/disconnect")
 	if err != nil {
-		fmt.Println("Error disconnecting:", err)
+		c.log.Sugar().Errorf("Error disconnecting: %v\n", err)
 		return
 	}
 	if code == http.StatusOK {
-		fmt.Println("Disconnected successfully")
+		c.log.Info("Disconnected successfully")
 		c.stopHeartbeat()
 	} else {
-		fmt.Println("Failed to disconnect")
+		c.log.Error("Failed to disconnect")
 		return
 	}
 }
@@ -64,13 +68,13 @@ func (c *Client) Disconnect() {
 func (c *Client) heartbeat() {
 	code, err := c.sendRequest("/heartbeat")
 	if err != nil {
-		fmt.Println("Error sending heartbeat:", err)
+		c.log.Sugar().Errorf("Error sending heartbeat: %v\n", err)
 		return
 	}
 	if code == http.StatusOK {
-		fmt.Println("Heartbeat sent successfully")
+		c.log.Info("Heartbeat sent successfully")
 	} else {
-		fmt.Println("Failed to send heartbeat")
+		c.log.Error("Failed to send heartbeat")
 		return
 	}
 }
@@ -118,8 +122,7 @@ func (c *Client) getPayload() ([]byte, error) {
 func (c *Client) getRequest(path string) (*http.Request, error) {
 	payload, err := c.getPayload()
 	if err != nil {
-		// log error
-		fmt.Println("Error getting payload:", err)
+		c.log.Sugar().Errorf("Error getting payload: %v\n", err)
 		return nil, err
 	}
 
@@ -127,7 +130,7 @@ func (c *Client) getRequest(path string) (*http.Request, error) {
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
-		fmt.Println("Error creating request:", err)
+		c.log.Sugar().Errorf("Error creating request: %v\n", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -145,18 +148,18 @@ func (c *Client) sendRequest(path string) (int, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error sending request:", err)
+		c.log.Sugar().Errorf("Error sending request: %v\n", err)
 		return 500, err
 	}
 	defer resp.Body.Close()
 
-	fmt.Printf("Request sent to %s\n", path)
-	fmt.Printf("Request method: %s\n", req.Method)
-
 	body, _ := io.ReadAll(resp.Body)
-	fmt.Printf("Response body: %s\n", string(body))
 
-	// Handle the response
-	fmt.Printf("Response code: %d\n", resp.StatusCode)
+	c.log.Debug("Request sent",
+		zap.String("path", path),
+		zap.String("method", req.Method),
+		zap.String("response_body", string(body)),
+		zap.Int("status_code", resp.StatusCode),
+	)
 	return resp.StatusCode, nil
 }
