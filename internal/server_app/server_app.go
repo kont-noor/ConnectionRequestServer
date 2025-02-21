@@ -1,9 +1,9 @@
 package serverapp
 
 import (
+	adapter "connection_request_server/internal/mongo_adapter"
 	"connection_request_server/internal/router"
 	"connection_request_server/internal/service"
-	"connection_request_server/pkg/mongo"
 	"connection_request_server/pkg/server"
 	"os"
 
@@ -15,11 +15,11 @@ func Run() {
 	defer logger.Sync()
 
 	mongoURL := os.Getenv("MONGO_URL")
-	mongoClient, err := mongo.New(mongo.Config{Url: mongoURL})
+	repositoryClient, err := adapter.New(adapter.Config{Url: mongoURL})
 	if err != nil {
 		logger.Sugar().Errorf("failed to create mongo client: %v, url: %s", err, mongoURL)
 	}
-	appService := service.New(service.Config{Repository: mongoClient})
+	appService := service.New(service.Config{Repository: repositoryClient})
 	appRouter := router.New(router.Config{APIHandlers: appService, Log: logger})
 
 	serverHostname := os.Getenv("SERVER_HOSTNAME")

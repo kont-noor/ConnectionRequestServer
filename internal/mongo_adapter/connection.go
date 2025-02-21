@@ -1,4 +1,4 @@
-package mongo
+package mongo_adapter
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
