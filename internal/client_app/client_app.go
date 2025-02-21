@@ -3,6 +3,7 @@ package clientapp
 import (
 	"connection_request_server/internal/client"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -18,20 +19,30 @@ func Run() {
 
 	serverHostname := os.Getenv("SERVER_HOSTNAME")
 	serverPort := os.Getenv("SERVER_PORT")
+	userId := os.Getenv("USER_ID")
+	deviceId := os.Getenv("DEVICE_ID")
 
-	client1 := client.New(client.Config{Host: fmt.Sprintf("http://%s:%s/api/v1", serverHostname, serverPort), UserID: "15", DeviceID: "1", Log: logger})
-	client2 := client.New(client.Config{Host: fmt.Sprintf("http://%s:%s/api/v1", serverHostname, serverPort), UserID: "15", DeviceID: "2", Log: logger})
-	client1.Connect()
-	client2.Connect()
+	connected := false
+	client1 := client.New(client.Config{Host: fmt.Sprintf("http://%s:%s/api/v1", serverHostname, serverPort), UserID: userId, DeviceID: deviceId, Log: logger})
+	err := client1.Connect()
+
+	if err == nil {
+		connected = true
+	}
 
 	for {
-		time.Sleep(10 * time.Second)
-		client1.Disconnect()
-		client2.Connect()
-		client1.Connect()
-		time.Sleep(10 * time.Second)
-		client2.Disconnect()
-		client1.Connect()
-		client2.Connect()
+		time.Sleep(time.Duration(rand.Intn(9)+1) * time.Second)
+		if connected {
+			err = client1.Disconnect()
+			if err == nil {
+				connected = false
+			}
+		} else {
+			err = client1.Connect()
+			if err == nil {
+				connected = true
+			}
+		}
 	}
+
 }
