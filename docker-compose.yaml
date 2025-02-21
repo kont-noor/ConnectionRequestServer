@@ -9,7 +9,9 @@ services:
     depends_on:
       - mongo
   client_1: &common_client
-    build: .
+    build:
+      dockerfile: Dockerfile.client
+      context: .
     command: /client
     environment:
       - SERVER_HOSTNAME=server

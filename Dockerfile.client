@@ -10,12 +10,10 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o ./bin/server cmd/server/main.go
+RUN go build -o ./bin/client cmd/client/main.go
 
 FROM alpine AS runner
 
-COPY --from=builder /usr/local/src/bin/server /
-
-EXPOSE 3000
+COPY --from=builder /usr/local/src/bin/client /
 
 CMD ["/client"]
