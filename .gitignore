@@ -1,2 +1,6 @@
 .idea
 *.swp
+.vscode
+**/*/__debug_bin
+.DS_Store
+*/**/.DS_Store
