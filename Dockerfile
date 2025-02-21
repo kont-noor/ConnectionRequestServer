@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine AS builder
 
-WORKDIR /usr/local/src
+WORKDIR /app
 
 RUN addgroup -S 1001 && adduser -S crs -G 1001
 
@@ -8,19 +8,27 @@ RUN apk --no-cache add bash git make gcc gettext musl-dev
 
 ADD ["go.mod", "go.sum", "./"]
 
-RUN go mod download
+RUN --mount=type=cache,target=/go-cache \
+    --mount=type=cache,target=/gomod-cache \
+    go mod download
 
 COPY . .
 
-RUN go build -o ./bin/server cmd/server/main.go
+RUN --mount=type=cache,target=/go-cache \
+    --mount=type=cache,target=/gomod-cache \
+    go build \
+        -ldflags="-linkmode external -extldflags -static" \
+        -o ./bin/server cmd/server/main.go
 
-FROM alpine AS runner
+FROM scratch AS runner
+
+WORKDIR /app
 
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /usr/local/src/bin/server /
+COPY --from=builder /app/bin/server /app/server
 
 USER crs
 
 EXPOSE 3000
 
-CMD ["/server"]
+CMD ["/app/server"]
