@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -35,33 +36,35 @@ func New(config Config) *Client {
 	}
 }
 
-func (c *Client) Connect() {
+func (c *Client) Connect() error {
 	code, err := c.sendRequest("/connect")
 	if err != nil {
 		c.log.Sugar().Errorf("Error connecting: %v\n", err)
-		return
+		return errors.New("Failed to connect")
 	}
 	if code == http.StatusOK {
 		c.log.Info("Connected successfully")
 		c.initHeartbeat()
+		return nil
 	} else {
 		c.log.Error("Failed to connect")
-		return
+		return errors.New("Failed to connect")
 	}
 }
 
-func (c *Client) Disconnect() {
+func (c *Client) Disconnect() error {
 	code, err := c.sendRequest("/disconnect")
 	if err != nil {
 		c.log.Sugar().Errorf("Error disconnecting: %v\n", err)
-		return
+		return errors.New("Failed to disconnect")
 	}
 	if code == http.StatusOK {
 		c.log.Info("Disconnected successfully")
 		c.stopHeartbeat()
+		return nil
 	} else {
 		c.log.Error("Failed to disconnect")
-		return
+		return errors.New("Failed to disconnect")
 	}
 }
 

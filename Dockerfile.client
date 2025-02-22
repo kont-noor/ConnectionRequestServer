@@ -18,17 +18,15 @@ RUN --mount=type=cache,target=/go-cache \
     --mount=type=cache,target=/gomod-cache \
     go build \
         -ldflags="-linkmode external -extldflags -static" \
-        -o ./bin/server cmd/server/main.go
+        -o ./bin/client cmd/client/main.go
 
-FROM scratch AS runner
+FROM scratch
 
 WORKDIR /app
 
 COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /app/bin/server /app/server
+COPY --from=builder /app/bin/client /app/client
 
 USER crs
 
-EXPOSE 3000
-
-CMD ["/app/server"]
+CMD ["/app/client"]

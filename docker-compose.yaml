@@ -1,21 +1,37 @@
 services:
   server:
     build: .
-    command: /server
     environment:
       - SERVER_HOSTNAME=server
       - SERVER_PORT=3000
       - MONGO_URL=mongodb://mongo:mongo@mongo:27017
     depends_on:
       - mongo
-  client:
-    build: .
-    command: /client
+  client_1: &common_client
+    build:
+      dockerfile: Dockerfile.client
+      context: .
     environment:
       - SERVER_HOSTNAME=server
       - SERVER_PORT=3000
+      - USER_ID = 1001
+      - DEVICE_ID = 5001
     depends_on:
       - server
+  client_2:
+    <<: *common_client
+    environment:
+      - SERVER_HOSTNAME=server
+      - SERVER_PORT=3000
+      - USER_ID = 1001
+      - DEVICE_ID = 5002
+  client_3:
+    <<: *common_client
+    environment:
+      - SERVER_HOSTNAME=server
+      - SERVER_PORT=3000
+      - USER_ID = 1002
+      - DEVICE_ID = 5002
   mongo:
     image: mongo:latest
     environment:
