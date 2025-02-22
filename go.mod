@@ -1,6 +1,6 @@
 module connection_request_server
 
-go 1.23.0
+go 1.24.0
 
 require (
 	go.mongodb.org/mongo-driver v1.16.1 // direct
