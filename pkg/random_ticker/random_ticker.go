@@ -30,17 +30,22 @@ func (t *RandomTicker) start() {
 	t.stopChannel = make(chan struct{})
 
 	go func() {
+		sleep := t.setRandomDuration()
 		for {
-			sleep := time.Duration(rand.Int63n(int64(t.maxDuration-t.minDuration))) + t.minDuration
 			select {
 			case <-t.stopChannel:
 				close(t.C)
 				return
 			case <-time.After(sleep):
+				sleep = t.setRandomDuration()
 				t.C <- time.Now()
 			}
 		}
 	}()
+}
+
+func (t *RandomTicker) setRandomDuration() time.Duration {
+	return time.Duration(rand.Int63n(int64(t.maxDuration-t.minDuration))) + t.minDuration
 }
 
 func (t *RandomTicker) Stop() {
