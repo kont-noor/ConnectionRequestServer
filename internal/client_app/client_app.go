@@ -2,8 +2,8 @@ package clientapp
 
 import (
 	"connection_request_server/internal/client"
+	randomticker "connection_request_server/pkg/random_ticker"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -30,8 +30,10 @@ func Run() {
 		connected = true
 	}
 
-	for {
-		time.Sleep(time.Duration(rand.Intn(9)+1) * time.Second)
+	ticker := randomticker.New(1*time.Second, 9*time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
 		if connected {
 			err = client1.Disconnect()
 			if err == nil {
@@ -44,5 +46,4 @@ func Run() {
 			}
 		}
 	}
-
 }
