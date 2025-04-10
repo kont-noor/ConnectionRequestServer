@@ -10,7 +10,7 @@ import (
 
 type Repository interface {
 	FindUserConnection(UserID string) (*domain.Connection, error)
-	FindActiveConnection(UserID string, DomainID string) (*domain.Connection, error)
+	//FindActiveConnection(UserID string, DeviceID string) (*domain.Connection, error)
 	InsertConnection(connection *domain.Connection) error
 	DeleteConnection(UserID string, DeviceID string) error
 	HeartbeatConnection(UserID string, DeviceID string) error
