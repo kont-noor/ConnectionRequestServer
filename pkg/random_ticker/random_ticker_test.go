@@ -1,7 +1,6 @@
-package randomticker_test
+package randomticker
 
 import (
-	randomticker "connection_request_server/pkg/random_ticker"
 	"testing"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 func TestNormalWork(t *testing.T) {
 	assert := assert.New(t)
 
-	ticker := randomticker.New(1*time.Millisecond, 9*time.Millisecond)
+	ticker := New(1*time.Millisecond, 9*time.Millisecond)
 	defer ticker.Stop()
 
 	count := 0
@@ -28,7 +27,7 @@ func TestNormalWork(t *testing.T) {
 func TestStop(t *testing.T) {
 	assert := assert.New(t)
 
-	ticker := randomticker.New(2*time.Millisecond, 9*time.Millisecond)
+	ticker := New(2*time.Millisecond, 9*time.Millisecond)
 	defer ticker.Stop()
 
 	count := 0
@@ -57,7 +56,7 @@ func TestStop(t *testing.T) {
 func TestRandomTicks(t *testing.T) {
 	assert := assert.New(t)
 
-	ticker := randomticker.New(1*time.Millisecond, 100*time.Millisecond)
+	ticker := New(1*time.Millisecond, 100*time.Millisecond)
 	defer ticker.Stop()
 
 	tickPeriod := 40 * time.Millisecond
@@ -82,7 +81,7 @@ func TestRandomTicks(t *testing.T) {
 func TestSameTicks(t *testing.T) {
 	assert := assert.New(t)
 
-	ticker := randomticker.New(2*time.Millisecond, 2*time.Millisecond)
+	ticker := New(2*time.Millisecond, 2*time.Millisecond)
 	defer ticker.Stop()
 
 	tickPeriod := 2 * time.Millisecond
