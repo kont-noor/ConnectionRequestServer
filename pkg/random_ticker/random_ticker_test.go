@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test1(t *testing.T) {
+func TestNormalWork(t *testing.T) {
 	assert := assert.New(t)
 
 	ticker := randomticker.New(1*time.Millisecond, 9*time.Millisecond)
@@ -25,7 +25,7 @@ func Test1(t *testing.T) {
 	assert.Equal(count, 3, "Must receive 3 ticks")
 }
 
-func Test2(t *testing.T) {
+func TestStop(t *testing.T) {
 	assert := assert.New(t)
 
 	ticker := randomticker.New(2*time.Millisecond, 9*time.Millisecond)
@@ -51,5 +51,55 @@ func Test2(t *testing.T) {
 	case <-time.After(50 * time.Millisecond):
 	}
 
-	assert.LessOrEqual(count, 0, "Ticker must not tick after it's stop")
+	assert.Equal(count, 0, "Ticker must not tick after it's stop")
+}
+
+func TestRandomTicks(t *testing.T) {
+	assert := assert.New(t)
+
+	ticker := randomticker.New(1*time.Millisecond, 100*time.Millisecond)
+	defer ticker.Stop()
+
+	tickPeriod := 40 * time.Millisecond
+	lastTick := time.Now()
+
+	count := 0
+	for timeStamp := range ticker.C {
+		count++
+		if count >= 5 {
+			break
+		}
+
+		newPeriod := timeStamp.Sub(lastTick)
+
+		assert.NotEqual(newPeriod.Milliseconds(), tickPeriod.Milliseconds(), "periods must be random")
+
+		lastTick = timeStamp
+		tickPeriod = newPeriod
+	}
+}
+
+func TestSameTicks(t *testing.T) {
+	assert := assert.New(t)
+
+	ticker := randomticker.New(2*time.Millisecond, 2*time.Millisecond)
+	defer ticker.Stop()
+
+	tickPeriod := 2 * time.Millisecond
+	lastTick := time.Now()
+
+	count := 0
+	for timeStamp := range ticker.C {
+		count++
+		if count >= 20 {
+			break
+		}
+
+		newPeriod := timeStamp.Sub(lastTick)
+
+		assert.Equal(newPeriod.Milliseconds(), tickPeriod.Milliseconds(), "periods must be the same")
+
+		lastTick = timeStamp
+		tickPeriod = newPeriod
+	}
 }

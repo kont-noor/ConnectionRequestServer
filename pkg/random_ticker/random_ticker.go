@@ -45,6 +45,10 @@ func (t *RandomTicker) start() {
 }
 
 func (t *RandomTicker) setRandomDuration() time.Duration {
+	if t.minDuration == t.maxDuration {
+		return t.maxDuration
+	}
+
 	return time.Duration(rand.Int63n(int64(t.maxDuration-t.minDuration))) + t.minDuration
 }
 
