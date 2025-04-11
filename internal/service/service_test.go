@@ -1,9 +1,7 @@
 package service
 
 import (
-	"bytes"
 	"connection_request_server/internal/domain"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +23,7 @@ func TestConnect(t *testing.T) {
 	service := New(Config{Repository: repo})
 
 	t.Run("Bad Request", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/connect", nil)
+		req := createRequest(http.MethodGet, "/connect", nil)
 		res := httptest.NewRecorder()
 
 		service.Connect(res, req)
@@ -35,14 +33,9 @@ func TestConnect(t *testing.T) {
 	})
 
 	t.Run("Connection exists", func(t *testing.T) {
-		params := requestParams{UserID: "USER_ID"}
-		jsonBody, err := json.Marshal(params)
+		params := &requestParams{UserID: "USER_ID", DeviceID: "DEVICE_ID"}
 
-		if err != nil {
-			t.Fatalf("Failed to marshal request params: %v", err)
-		}
-
-		req := httptest.NewRequest(http.MethodGet, "/connect", bytes.NewReader(jsonBody))
+		req := createRequest(http.MethodGet, "/connect", params)
 		res := httptest.NewRecorder()
 
 		service.Connect(res, req)
@@ -52,14 +45,8 @@ func TestConnect(t *testing.T) {
 	})
 
 	t.Run("Create connection", func(t *testing.T) {
-		params := requestParams{UserID: "User1", DeviceID: "Device1"}
-		jsonBody, err := json.Marshal(params)
-
-		if err != nil {
-			t.Fatalf("Failed to marshal request params: %v", err)
-		}
-
-		req := httptest.NewRequest(http.MethodGet, "/connect", bytes.NewReader(jsonBody))
+		params := &requestParams{UserID: "User1", DeviceID: "Device1"}
+		req := createRequest(http.MethodGet, "/connect", params)
 		res := httptest.NewRecorder()
 
 		service.Connect(res, req)
