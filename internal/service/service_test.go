@@ -9,45 +9,54 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	service, repo := createMockService()
+	tests := []struct {
+		name           string
+		input          *requestParams
+		expectedStatus int
+		expectedConns  int
+		validate       func(*testing.T, *MockRepository)
+	}{
+		{
+			name:           "Bad Request - no body",
+			input:          nil,
+			expectedStatus: http.StatusBadRequest,
+			expectedConns:  1,
+		},
+		{
+			name:           "Connection exists",
+			input:          &requestParams{UserID: "USER_ID", DeviceID: "DEVICE_ID"},
+			expectedStatus: http.StatusConflict,
+			expectedConns:  1,
+		},
+		{
+			name:           "Create connection",
+			input:          &requestParams{UserID: "User1", DeviceID: "Device1"},
+			expectedStatus: http.StatusOK,
+			expectedConns:  2,
+			validate: func(t *testing.T, repo *MockRepository) {
+				conn := repo.Connections[len(repo.Connections)-1]
+				assert.Equal(t, "User1", conn.UserID)
+				assert.Equal(t, "Device1", conn.DeviceID)
+				assert.NotZero(t, conn.ConnectedAt)
+				assert.NotZero(t, conn.LastHeartbeat)
+			},
+		},
+	}
 
-	t.Run("Bad Request", func(t *testing.T) {
-		req := createRequest(http.MethodGet, "/connect", nil)
-		res := httptest.NewRecorder()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service, repo := createMockService()
+			req := createRequest(http.MethodGet, "/connect", test.input)
+			res := httptest.NewRecorder()
 
-		service.Connect(res, req)
+			service.Connect(res, req)
 
-		assert.Equal(t, http.StatusBadRequest, res.Code)
-		assert.Equal(t, len(repo.Connections), 1)
-	})
+			assert.Equal(t, test.expectedStatus, res.Code)
+			assert.Len(t, repo.Connections, test.expectedConns)
 
-	t.Run("Connection exists", func(t *testing.T) {
-		params := &requestParams{UserID: "USER_ID", DeviceID: "DEVICE_ID"}
-
-		req := createRequest(http.MethodGet, "/connect", params)
-		res := httptest.NewRecorder()
-
-		service.Connect(res, req)
-
-		assert.Equal(t, http.StatusConflict, res.Code)
-		assert.Equal(t, len(repo.Connections), 1)
-	})
-
-	t.Run("Create connection", func(t *testing.T) {
-		params := &requestParams{UserID: "User1", DeviceID: "Device1"}
-		req := createRequest(http.MethodGet, "/connect", params)
-		res := httptest.NewRecorder()
-
-		service.Connect(res, req)
-
-		assert.Equal(t, http.StatusOK, res.Code)
-		assert.Equal(t, len(repo.Connections), 2)
-
-		connection := repo.Connections[len(repo.Connections)-1]
-
-		assert.Equal(t, "User1", connection.UserID)
-		assert.Equal(t, "Device1", connection.DeviceID)
-		assert.NotNil(t, connection.ConnectedAt)
-		assert.NotNil(t, connection.LastHeartbeat)
-	})
+			if test.validate != nil {
+				test.validate(t, repo)
+			}
+		})
+	}
 }
