@@ -45,7 +45,10 @@ func TestConnect(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			service, repo := createMockService()
 			req := createRequest(http.MethodPost, "/connect", test.input)
 			res := httptest.NewRecorder()
@@ -91,7 +94,10 @@ func TestDisconnect(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			service, repo := createMockService()
 			req := createRequest(http.MethodDelete, "/disconnect", test.input)
 			res := httptest.NewRecorder()
@@ -136,7 +142,10 @@ func TestHeartbeat(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			service, repo := createMockService()
 			req := createRequest(http.MethodPut, "/heartbeat", test.input)
 			res := httptest.NewRecorder()
