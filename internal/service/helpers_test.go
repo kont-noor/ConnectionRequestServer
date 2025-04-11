@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"connection_request_server/internal/domain"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,4 +19,18 @@ func createRequest(method, path string, params *requestParams) *http.Request {
 	req := httptest.NewRequest(method, path, &buf)
 	req.Header.Set("Content-Type", "application/json")
 	return req
+}
+func createMockService() (*service, *MockRepository) {
+	repo := &MockRepository{
+		Connections: []*domain.Connection{
+			{
+				ID:       "CONNECTION_ID",
+				UserID:   "USER_ID",
+				DeviceID: "DEVICE_ID",
+			},
+		},
+	}
+	service := New(Config{Repository: repo})
+
+	return service, repo
 }

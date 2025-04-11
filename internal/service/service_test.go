@@ -1,7 +1,6 @@
 package service
 
 import (
-	"connection_request_server/internal/domain"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,17 +9,7 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	connections := []*domain.Connection{
-		{
-			ID:       "CONNECTION_ID",
-			UserID:   "USER_ID",
-			DeviceID: "DEVICE_ID",
-		},
-	}
-	repo := &MockRepository{
-		Connections: connections,
-	}
-	service := New(Config{Repository: repo})
+	service, repo := createMockService()
 
 	t.Run("Bad Request", func(t *testing.T) {
 		req := createRequest(http.MethodGet, "/connect", nil)
