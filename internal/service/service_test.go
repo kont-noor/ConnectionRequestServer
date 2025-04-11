@@ -14,7 +14,7 @@ func TestConnect(t *testing.T) {
 		input          *requestParams
 		expectedStatus int
 		expectedConns  int
-		validate       func(*testing.T, *MockRepository)
+		validate       func(*testing.T, *mockRepository)
 	}{
 		{
 			name:           "Bad Request - no body",
@@ -33,7 +33,7 @@ func TestConnect(t *testing.T) {
 			input:          &requestParams{UserID: "User1", DeviceID: "Device1"},
 			expectedStatus: http.StatusOK,
 			expectedConns:  2,
-			validate: func(t *testing.T, repo *MockRepository) {
+			validate: func(t *testing.T, repo *mockRepository) {
 				conn := repo.Connections[len(repo.Connections)-1]
 				assert.Equal(t, "User1", conn.UserID)
 				assert.Equal(t, "Device1", conn.DeviceID)

@@ -20,8 +20,8 @@ func createRequest(method, path string, params *requestParams) *http.Request {
 	req.Header.Set("Content-Type", "application/json")
 	return req
 }
-func createMockService() (*service, *MockRepository) {
-	repo := &MockRepository{
+func createMockService() (*service, *mockRepository) {
+	repo := &mockRepository{
 		Connections: []*domain.Connection{
 			{
 				ID:       "CONNECTION_ID",

@@ -2,12 +2,12 @@ package service
 
 import "connection_request_server/internal/domain"
 
-type MockRepository struct {
+type mockRepository struct {
 	Connections []*domain.Connection
 	Error       error
 }
 
-func (t *MockRepository) FindUserConnection(userID string) (*domain.Connection, error) {
+func (t *mockRepository) FindUserConnection(userID string) (*domain.Connection, error) {
 	if t.Error != nil {
 		return nil, t.Error
 	}
@@ -21,15 +21,15 @@ func (t *MockRepository) FindUserConnection(userID string) (*domain.Connection, 
 	return nil, nil
 }
 
-func (t *MockRepository) InsertConnection(connection *domain.Connection) error {
+func (t *mockRepository) InsertConnection(connection *domain.Connection) error {
 	t.Connections = append(t.Connections, connection)
 	return nil
 }
 
-func (t *MockRepository) DeleteConnection(userID, deviceID string) error {
+func (t *mockRepository) DeleteConnection(userID, deviceID string) error {
 	return nil
 }
 
-func (t *MockRepository) HeartbeatConnection(userID, deviceID string) error {
+func (t *mockRepository) HeartbeatConnection(userID, deviceID string) error {
 	return nil
 }
