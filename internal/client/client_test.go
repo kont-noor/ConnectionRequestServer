@@ -61,11 +61,13 @@ func TestConnect(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 
+			server.mu.Lock()
 			if test.Heartbeat {
 				assert.GreaterOrEqual(t, server.HeartbeatCount, 1)
 			} else {
 				assert.Zero(t, server.HeartbeatCount)
 			}
+			server.mu.Unlock()
 		})
 	}
 }
@@ -117,11 +119,13 @@ func TestDisconnect(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 
+			server.mu.Lock()
 			if test.Heartbeat {
 				assert.GreaterOrEqual(t, server.HeartbeatCount, 1)
 			} else {
 				assert.Zero(t, server.HeartbeatCount)
 			}
+			server.mu.Unlock()
 		})
 	}
 }
