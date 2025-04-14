@@ -40,15 +40,18 @@ func (c *Client) Connect() error {
 	code, err := c.sendRequest("/connect")
 	if err != nil {
 		c.log.Sugar().Errorf("Error connecting: %v\n", err)
-		return errors.New("Failed to connect")
+		return errors.New("failed to connect")
 	}
 	if code == http.StatusOK {
 		c.log.Info("Connected successfully")
 		c.initHeartbeat()
 		return nil
+	} else if code == http.StatusConflict {
+		c.log.Warn("Connection exists at another device")
+		return errors.New("failed to connect")
 	} else {
 		c.log.Error("Failed to connect")
-		return errors.New("Failed to connect")
+		return errors.New("failed to connect")
 	}
 }
 
@@ -56,7 +59,7 @@ func (c *Client) Disconnect() error {
 	code, err := c.sendRequest("/disconnect")
 	if err != nil {
 		c.log.Sugar().Errorf("Error disconnecting: %v\n", err)
-		return errors.New("Failed to disconnect")
+		return errors.New("failed to disconnect")
 	}
 	if code == http.StatusOK {
 		c.log.Info("Disconnected successfully")
@@ -64,7 +67,7 @@ func (c *Client) Disconnect() error {
 		return nil
 	} else {
 		c.log.Error("Failed to disconnect")
-		return errors.New("Failed to disconnect")
+		return errors.New("failed to disconnect")
 	}
 }
 

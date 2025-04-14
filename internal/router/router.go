@@ -2,7 +2,7 @@ package router
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -46,10 +46,10 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var bodyBytes []byte
 		if r.Body != nil {
-			bodyBytes, _ = ioutil.ReadAll(r.Body)
+			bodyBytes, _ = io.ReadAll(r.Body)
 		}
 
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		logger.Info("Received request",
 			zap.String("method", r.Method),

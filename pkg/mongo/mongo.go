@@ -1,6 +1,6 @@
 package mongo
 
-type mongo struct {
+type mongoClient struct {
 }
 
 func New() *mongoClient {
