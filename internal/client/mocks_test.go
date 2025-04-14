@@ -28,6 +28,8 @@ func newMockServer(connectResponse, disconnectResponse int) *mockServer {
 			mockS.HeartbeatCount++
 			mockS.mu.Unlock()
 			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
 	return &mockS
