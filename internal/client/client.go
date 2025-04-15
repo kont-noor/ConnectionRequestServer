@@ -62,14 +62,15 @@ func (c *Client) Disconnect() error {
 		c.log.Sugar().Errorf("Error disconnecting: %v\n", err)
 		return errors.New("failed to disconnect")
 	}
+
 	if code == http.StatusOK {
 		c.log.Info("Disconnected successfully")
 		c.stopHeartbeat()
 		return nil
-	} else {
-		c.log.Error("Failed to disconnect")
-		return errors.New("failed to disconnect")
 	}
+
+	c.log.Error("Failed to disconnect")
+	return errors.New("failed to disconnect")
 }
 
 func (c *Client) heartbeat() {
@@ -78,12 +79,13 @@ func (c *Client) heartbeat() {
 		c.log.Sugar().Errorf("Error sending heartbeat: %v\n", err)
 		return
 	}
+
 	if code == http.StatusOK {
 		c.log.Info("Heartbeat sent successfully")
-	} else {
-		c.log.Error("Failed to send heartbeat")
 		return
 	}
+
+	c.log.Error("Failed to send heartbeat")
 }
 
 func (c *Client) initHeartbeat() {
