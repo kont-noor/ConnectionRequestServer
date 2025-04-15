@@ -40,17 +40,11 @@ func TestConnect(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
-			log := zap.NewNop()
 
 			server := newMockServer(test.ReceivedResponse, http.StatusOK)
 			defer server.Server.Close()
 
-			client := New(Config{
-				Host:     server.Server.URL,
-				UserID:   "u1",
-				DeviceID: "d1",
-				Log:      log,
-			})
+			client := newClient(server.Server.URL)
 
 			err := client.Connect()
 			if test.IsError {
@@ -97,17 +91,10 @@ func TestDisconnect(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
 
-			log := zap.NewNop()
-
 			server := newMockServer(http.StatusOK, test.ReceivedResponse)
 			defer server.Server.Close()
 
-			client := New(Config{
-				Host:     server.Server.URL,
-				UserID:   "u1",
-				DeviceID: "d1",
-				Log:      log,
-			})
+			client := newClient(server.Server.URL)
 
 			client.Connect()
 			err := client.Disconnect()
@@ -128,4 +115,13 @@ func TestDisconnect(t *testing.T) {
 			server.mu.Unlock()
 		})
 	}
+}
+
+func newClient(url string) *Client {
+	return New(Config{
+		Host:     url,
+		UserID:   "u1",
+		DeviceID: "d1",
+		Log:      zap.NewNop(),
+	})
 }
