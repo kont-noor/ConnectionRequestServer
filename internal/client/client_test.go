@@ -67,54 +67,43 @@ func TestConnect(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	tests := []struct {
-		Name             string
-		ReceivedResponse int
-		IsError          bool
-		Heartbeat        bool
-	}{
-		{
-			Name:             "Success",
-			ReceivedResponse: http.StatusOK,
-			IsError:          false,
-			Heartbeat:        false,
-		},
-		{
-			Name:             "Fail",
-			ReceivedResponse: http.StatusInternalServerError,
-			IsError:          true,
-			Heartbeat:        true,
-		},
-	}
+	t.Run("Successful disconnect", func(t *testing.T) {
+		t.Parallel()
 
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			t.Parallel()
+		server := newMockServer(http.StatusOK, http.StatusOK)
+		defer server.Server.Close()
 
-			server := newMockServer(http.StatusOK, test.ReceivedResponse)
-			defer server.Server.Close()
+		client := newClient(server.Server.URL)
 
-			client := newClient(server.Server.URL)
+		client.Connect()
+		err := client.Disconnect()
+		assert.NoError(t, err)
 
-			client.Connect()
-			err := client.Disconnect()
-			if test.IsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+		time.Sleep(2 * time.Second)
 
-			time.Sleep(2 * time.Second)
+		server.mu.Lock()
+		assert.Zero(t, server.HeartbeatCount)
+		server.mu.Unlock()
+	})
 
-			server.mu.Lock()
-			if test.Heartbeat {
-				assert.GreaterOrEqual(t, server.HeartbeatCount, 1)
-			} else {
-				assert.Zero(t, server.HeartbeatCount)
-			}
-			server.mu.Unlock()
-		})
-	}
+	t.Run("Failed disconnect", func(t *testing.T) {
+		t.Parallel()
+
+		server := newMockServer(http.StatusOK, http.StatusInternalServerError)
+		defer server.Server.Close()
+
+		client := newClient(server.Server.URL)
+
+		client.Connect()
+		err := client.Disconnect()
+		assert.Error(t, err)
+
+		time.Sleep(2 * time.Second)
+
+		server.mu.Lock()
+		assert.GreaterOrEqual(t, server.HeartbeatCount, 1)
+		server.mu.Unlock()
+	})
 }
 
 func newClient(url string) *Client {
