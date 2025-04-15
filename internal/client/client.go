@@ -42,14 +42,15 @@ func (c *Client) Connect() error {
 		c.log.Sugar().Errorf("Error connecting: %v\n", err)
 		return errors.New("failed to connect")
 	}
-	if code == http.StatusOK {
+	switch code {
+	case http.StatusOK:
 		c.log.Info("Connected successfully")
 		c.initHeartbeat()
 		return nil
-	} else if code == http.StatusConflict {
+	case http.StatusConflict:
 		c.log.Warn("Connection exists at another device")
 		return errors.New("failed to connect")
-	} else {
+	default:
 		c.log.Error("Failed to connect")
 		return errors.New("failed to connect")
 	}
