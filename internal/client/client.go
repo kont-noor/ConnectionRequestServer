@@ -42,14 +42,15 @@ func (c *Client) Connect() error {
 		c.log.Sugar().Errorf("Error connecting: %v\n", err)
 		return errors.New("failed to connect")
 	}
-	if code == http.StatusOK {
+	switch code {
+	case http.StatusOK:
 		c.log.Info("Connected successfully")
 		c.initHeartbeat()
 		return nil
-	} else if code == http.StatusConflict {
+	case http.StatusConflict:
 		c.log.Warn("Connection exists at another device")
 		return errors.New("failed to connect")
-	} else {
+	default:
 		c.log.Error("Failed to connect")
 		return errors.New("failed to connect")
 	}
@@ -61,14 +62,15 @@ func (c *Client) Disconnect() error {
 		c.log.Sugar().Errorf("Error disconnecting: %v\n", err)
 		return errors.New("failed to disconnect")
 	}
+
 	if code == http.StatusOK {
 		c.log.Info("Disconnected successfully")
 		c.stopHeartbeat()
 		return nil
-	} else {
-		c.log.Error("Failed to disconnect")
-		return errors.New("failed to disconnect")
 	}
+
+	c.log.Error("Failed to disconnect")
+	return errors.New("failed to disconnect")
 }
 
 func (c *Client) heartbeat() {
@@ -77,12 +79,13 @@ func (c *Client) heartbeat() {
 		c.log.Sugar().Errorf("Error sending heartbeat: %v\n", err)
 		return
 	}
+
 	if code == http.StatusOK {
 		c.log.Info("Heartbeat sent successfully")
-	} else {
-		c.log.Error("Failed to send heartbeat")
 		return
 	}
+
+	c.log.Error("Failed to send heartbeat")
 }
 
 func (c *Client) initHeartbeat() {
