@@ -39,3 +39,36 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
           name: codecov-report
+
+  docker:
+    name: Build and Push Docker Images
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tag
+        id: vars
+        run: |
+          echo "SERVER_TAG=ghcr.io/${{ github.repository_owner }}/server:latest" >> $GITHUB_OUTPUT
+          echo "CLIENT_TAG=ghcr.io/${{ github.repository_owner }}/client:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push server image
+        run: |
+          docker build -f Dockerfile -t ${{ steps.vars.outputs.SERVER_TAG }} .
+          docker push ${{ steps.vars.outputs.SERVER_TAG }}
+
+      - name: Build and push client image
+        run: |
+          docker build -f Dockerfile.client -t ${{ steps.vars.outputs.CLIENT_TAG }} .
+          docker push ${{ steps.vars.outputs.CLIENT_TAG }}
