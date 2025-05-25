@@ -1,0 +1,19 @@
+auth:
+  enabled: true
+  rootUser: mongo
+  rootPassword: mongo
+  usernames:
+    - appuser
+  passwords:
+    - apppass
+  databases:
+    - appdb
+
+architecture: standalone
+
+persistence:
+  enabled: true
+  size: 8Gi
+  storageClass: default
+
+replicaCount: 2

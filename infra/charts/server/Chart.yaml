@@ -1,0 +1,8 @@
+apiVersion: v2
+name: server
+version: 0.1.0
+description: A Helm chart for the connection management server
+
+dependencies: []
+
+type: application
