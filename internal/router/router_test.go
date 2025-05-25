@@ -41,3 +41,21 @@ func TestRouter(t *testing.T) {
 		assert.True(t, mock.called[tt.expected], "Handler not called for "+tt.path)
 	}
 }
+
+func TestHealth(t *testing.T) {
+	mock := newMockHandler()
+	log := zap.NewNop()
+
+	r := New(Config{
+		APIHandlers: mock,
+		Log:         log,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", bytes.NewBufferString(""))
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "OK", rec.Body.String())
+}
