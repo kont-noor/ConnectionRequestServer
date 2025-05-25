@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -13,6 +14,7 @@ const (
 	connectPath    = "/connect"
 	disconnectPath = "/disconnect"
 	heartbeatPath  = "/heartbeat"
+	healthPath     = "/health"
 )
 
 type APIHandlers interface {
@@ -68,12 +70,18 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 	})
 }
 
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "OK")
+}
+
 func New(config Config) *http.ServeMux {
 	router := http.NewServeMux()
 
 	router.Handle(apiPath+connectPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Connect)))
 	router.Handle(apiPath+disconnectPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Disconnect)))
 	router.Handle(apiPath+heartbeatPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Heartbeat)))
+
+	router.Handle(healthPath, http.HandlerFunc(healthCheckHandler))
 
 	return router
 }
