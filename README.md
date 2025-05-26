@@ -130,3 +130,42 @@ Which technology stack do you recommend?
 1. Node.js + redis, rack + redis, rails3 + redis, or anything else? How many dynos do you estimate we'll need to meet our performance requirements? (it's ok if you don't know, we're just wondering if you have experience with apps of such high loads)
 2. Which database?
 3. Where do you store the state table of connected users? (for performance reasons, we suggest keeping this in memory only) How do you make sure that it's shared across multiple dynos?
+
+### Local Setup
+
+#### Overmind
+
+* It does not use dotenv setup so set the vars from `.env`
+* Setup Mongo
+* Run `overmind start`
+
+#### Docker compose
+
+Just run
+
+```bash
+docker compose build
+docker compose up
+```
+
+### K8s
+
+#### Local
+
+Setup Mongo
+
+```bash
+helm upgrade --install mongodb bitnami/mongodb -f ./infra/charts/mongodb/values.yaml --namespace connection-request-server --create-namespace
+```
+
+Setup Service
+
+```bash
+helm upgrade --install server ./infra/charts/server --namespace connection-request-server
+```
+
+To forward port to host machine (testing purpose) run the following
+
+```bash
+kubectl port-forward service/server-server 8080:80 -n connection-request-server
+```

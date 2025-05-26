@@ -15,7 +15,7 @@ server:
 
 mongo:
   #url: mongodb://mongo:mongo@mongo:27017
-  url: mongodb://appuser:apppass@mongodb.mongodb.svc.cluster.local:27017/appdb
+  url: mongodb://appuser:apppass@mongodb:27017/?authSource=connections
 
 resources: {}
 
@@ -29,3 +29,6 @@ prometheus:
   enabled: true
   serviceMonitor:
     interval: 15s
+
+ingress:
+  enabled: false

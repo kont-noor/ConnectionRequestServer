@@ -7,7 +7,7 @@ auth:
   passwords:
     - apppass
   databases:
-    - appdb
+    - connections
 
 architecture: standalone
 
