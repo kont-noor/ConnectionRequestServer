@@ -2,7 +2,6 @@ package router
 
 import (
 	"bytes"
-	"connection_request_server/internal/metrics"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,9 +23,14 @@ type APIHandlers interface {
 	Heartbeat(w http.ResponseWriter, r *http.Request)
 }
 
+type MetricsMiddleware interface {
+	Middleware(next http.Handler) http.Handler
+	Routes(router *http.ServeMux)
+}
+
 type Config struct {
 	APIHandlers       APIHandlers
-	MetricsMiddleware *metrics.Middleware
+	MetricsMiddleware MetricsMiddleware
 	Log               *zap.Logger
 }
 
