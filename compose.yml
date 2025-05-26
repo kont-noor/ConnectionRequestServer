@@ -7,6 +7,7 @@ services:
       - MONGO_URL=mongodb://mongo:mongo@mongo:27017
       - MONGO_DB=connections
       - MONGO_COLLECTION=connections
+      - PROMETHEUS_ENABLED=true
     depends_on:
       - mongo
   client_1: &common_client

@@ -1,11 +1,13 @@
 package serverapp
 
 import (
+	"connection_request_server/internal/metrics"
 	adapter "connection_request_server/internal/mongo_adapter"
 	"connection_request_server/internal/router"
 	"connection_request_server/internal/service"
 	"connection_request_server/pkg/server"
 	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -31,7 +33,14 @@ func Run() {
 		logger.Sugar().Panicf("failed to create mongo client: %v, url: %s", err, mongoURL)
 	}
 	appService := service.New(service.Config{Repository: repositoryClient})
-	appRouter := router.New(router.Config{APIHandlers: appService, Log: logger})
+
+	enabledStr := os.Getenv("PROMETHEUS_ENABLED")
+	enabled, err := strconv.ParseBool(enabledStr)
+	if err != nil {
+		enabled = false
+	}
+	metricsMiddleware := metrics.NewMiddleware(enabled)
+	appRouter := router.New(router.Config{APIHandlers: appService, Log: logger, MetricsMiddleware: metricsMiddleware})
 
 	serverHostname := os.Getenv("SERVER_HOSTNAME")
 	serverPort := os.Getenv("SERVER_PORT")
