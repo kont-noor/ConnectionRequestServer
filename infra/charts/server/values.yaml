@@ -14,8 +14,9 @@ server:
   hostname: 0.0.0.0
 
 mongo:
-  #url: mongodb://mongo:mongo@mongo:27017
   url: mongodb://appuser:apppass@mongodb:27017/?authSource=connections
+  dbname: connections
+  collectionname: connections
 
 resources: {}
 

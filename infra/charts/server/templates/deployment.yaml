@@ -30,6 +30,16 @@ spec:
                 secretKeyRef:
                   name: {{ include "server.fullname" . }}-secret
                   key: url
+            - name: MONGO_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "server.fullname" . }}-secret
+                  key: dbname
+            - name: MONGO_COLLECTION
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "server.fullname" . }}-secret
+                  key: collectionname
           readinessProbe:
             httpGet:
               path: /health
