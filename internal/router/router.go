@@ -23,9 +23,15 @@ type APIHandlers interface {
 	Heartbeat(w http.ResponseWriter, r *http.Request)
 }
 
+type MetricsMiddleware interface {
+	Middleware(next http.Handler) http.Handler
+	Routes(router *http.ServeMux)
+}
+
 type Config struct {
-	APIHandlers APIHandlers
-	Log         *zap.Logger
+	APIHandlers       APIHandlers
+	MetricsMiddleware MetricsMiddleware
+	Log               *zap.Logger
 }
 
 type ResponseWriterWrapper struct {
@@ -77,11 +83,17 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 func New(config Config) *http.ServeMux {
 	router := http.NewServeMux()
 
-	router.Handle(apiPath+connectPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Connect)))
-	router.Handle(apiPath+disconnectPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Disconnect)))
-	router.Handle(apiPath+heartbeatPath, LoggingMiddleware(config.Log, http.HandlerFunc(config.APIHandlers.Heartbeat)))
+	router.Handle(apiPath+connectPath, applyMiddlewares(config, config.APIHandlers.Connect))
+	router.Handle(apiPath+disconnectPath, applyMiddlewares(config, config.APIHandlers.Disconnect))
+	router.Handle(apiPath+heartbeatPath, applyMiddlewares(config, config.APIHandlers.Heartbeat))
 
 	router.Handle(healthPath, http.HandlerFunc(healthCheckHandler))
 
+	config.MetricsMiddleware.Routes(router)
+
 	return router
+}
+
+func applyMiddlewares(config Config, handler func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	return config.MetricsMiddleware.Middleware(LoggingMiddleware(config.Log, http.HandlerFunc(handler)))
 }

@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	"connection_request_server/internal/metrics"
 	"net/http"
 	"testing"
 
@@ -16,8 +17,9 @@ func TestRouter(t *testing.T) {
 	log := zap.NewNop()
 
 	r := New(Config{
-		APIHandlers: mock,
-		Log:         log,
+		APIHandlers:       mock,
+		Log:               log,
+		MetricsMiddleware: metrics.NewMiddleware(false),
 	})
 
 	tests := []struct {
@@ -47,8 +49,9 @@ func TestHealth(t *testing.T) {
 	log := zap.NewNop()
 
 	r := New(Config{
-		APIHandlers: mock,
-		Log:         log,
+		APIHandlers:       mock,
+		Log:               log,
+		MetricsMiddleware: metrics.NewMiddleware(false),
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/health", bytes.NewBufferString(""))
