@@ -21,6 +21,8 @@ spec:
           ports:
             - containerPort: {{ .Values.server.port }}
           env:
+            - name: PROMETHEUS_ENABLED
+              value: {{ .Values.prometheus.enabled | quote }}
             - name: SERVER_HOSTNAME
               value: {{ .Values.server.hostname | quote }}
             - name: SERVER_PORT
