@@ -169,3 +169,9 @@ To forward port to host machine (testing purpose) run the following
 ```bash
 kubectl port-forward service/server-server 8080:80 -n connection-request-server
 ```
+
+Setup Prometeus
+
+```bash
+helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -f ./infra/charts/prometeus/values.yaml --namespace monitoring --create-namespace
+```
