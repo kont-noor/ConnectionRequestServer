@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kont-noor/server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+server:
+  port: 3000
+  hostname: 0.0.0.0
+
+mongo:
+  url: mongodb://appuser:apppass@mongodb:27017/?authSource=connections
+  dbname: connections
+  collectionname: connections
+
+resources: {}
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetLatency: 200m
+
+prometheus:
+  enabled: true
+  serviceMonitor:
+    interval: 15s
+
+ingress:
+  enabled: false
