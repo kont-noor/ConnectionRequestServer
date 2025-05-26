@@ -10,16 +10,23 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
 type Config struct {
-	Url string
+	Url            string
+	DbName         string
+	CollectionName string
+	Logger         *zap.Logger
 }
 
 type Mongo struct {
-	client  *mongo.Client
-	context context.Context
-	ttl     time.Duration
+	client         *mongo.Client
+	context        context.Context
+	ttl            time.Duration
+	dbName         string
+	collectionName string
+	logger         *zap.Logger
 }
 
 func New(config Config) (*Mongo, error) {
@@ -29,9 +36,12 @@ func New(config Config) (*Mongo, error) {
 	}
 
 	return &Mongo{
-		client:  client,
-		context: context.Background(),
-		ttl:     time.Duration(5000 * time.Millisecond),
+		client:         client,
+		context:        context.Background(),
+		ttl:            time.Duration(5000 * time.Millisecond),
+		dbName:         config.DbName,
+		collectionName: config.CollectionName,
+		logger:         config.Logger,
 	}, nil
 }
 
@@ -61,7 +71,9 @@ func ConvertToDomainConnection(connection *Connection) *domain.Connection {
 
 func (m *Mongo) FindUserConnection(UserID string) (*domain.Connection, error) {
 	filter := bson.M{"user_id": UserID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
-	collection := m.client.Database("connections").Collection("connections")
+	m.logger.Sugar().Infof("Mongo db %s\n", m.dbName)
+	m.logger.Sugar().Infof("Mongo collection %s\n", m.collectionName)
+	collection := m.client.Database(m.dbName).Collection(m.collectionName)
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find connection: %v", err)
@@ -82,7 +94,7 @@ func (m *Mongo) FindUserConnection(UserID string) (*domain.Connection, error) {
 
 func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*domain.Connection, error) {
 	filter := bson.M{"user_id": UserID, "device_id": DeviceID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
-	collection := m.client.Database("connections").Collection("connections")
+	collection := m.client.Database(m.dbName).Collection(m.collectionName)
 	cursor, err := collection.Find(context.Background(), filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find connection: %v", err)
@@ -101,7 +113,7 @@ func (m *Mongo) FindActiveConnection(UserID string, DeviceID string) (*domain.Co
 }
 
 func (m *Mongo) InsertConnection(connection *domain.Connection) error {
-	collection := m.client.Database("connections").Collection("connections")
+	collection := m.client.Database(m.dbName).Collection(m.collectionName)
 	_, err := collection.InsertOne(context.Background(), ConvertToMongoConnection(connection))
 	if err != nil {
 		return fmt.Errorf("failed to insert connection: %v", err)
@@ -112,7 +124,7 @@ func (m *Mongo) InsertConnection(connection *domain.Connection) error {
 
 func (m *Mongo) DeleteConnection(userID string, deviceID string) error {
 	filter := bson.M{"user_id": userID, "device_id": deviceID}
-	collection := m.client.Database("connections").Collection("connections")
+	collection := m.client.Database(m.dbName).Collection(m.collectionName)
 	_, err := collection.DeleteMany(context.Background(), filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete connection: %v", err)
@@ -124,7 +136,7 @@ func (m *Mongo) DeleteConnection(userID string, deviceID string) error {
 func (m *Mongo) HeartbeatConnection(userID string, deviceID string) error {
 	filter := bson.M{"user_id": userID, "device_id": deviceID, "last_heartbeat": bson.M{"$gt": primitive.NewDateTimeFromTime(time.Now().Add(-m.ttl))}}
 	update := bson.M{"$set": bson.M{"last_heartbeat": primitive.NewDateTimeFromTime(time.Now())}}
-	collection := m.client.Database("connections").Collection("connections")
+	collection := m.client.Database(m.dbName).Collection(m.collectionName)
 	_, err := collection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to update connection: %v", err)

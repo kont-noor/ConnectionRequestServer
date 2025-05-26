@@ -15,9 +15,20 @@ func Run() {
 	defer logger.Sync()
 
 	mongoURL := os.Getenv("MONGO_URL")
-	repositoryClient, err := adapter.New(adapter.Config{Url: mongoURL})
+	dbName := os.Getenv("MONGO_DB")
+	collectionName := os.Getenv("MONGO_COLLECTION")
+
+	logger.Sugar().Infof("Mongo URL %s\n", mongoURL)
+	logger.Sugar().Infof("Mongo db %s\n", dbName)
+	logger.Sugar().Infof("Mongo collection %s\n", collectionName)
+	repositoryClient, err := adapter.New(adapter.Config{
+		Url:            mongoURL,
+		DbName:         dbName,
+		CollectionName: collectionName,
+		Logger:         logger,
+	})
 	if err != nil {
-		logger.Sugar().Errorf("failed to create mongo client: %v, url: %s", err, mongoURL)
+		logger.Sugar().Panicf("failed to create mongo client: %v, url: %s", err, mongoURL)
 	}
 	appService := service.New(service.Config{Repository: repositoryClient})
 	appRouter := router.New(router.Config{APIHandlers: appService, Log: logger})
