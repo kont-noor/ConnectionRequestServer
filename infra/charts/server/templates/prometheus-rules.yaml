@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "server.fullname" . }}-rules
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: {{ include "server.fullname" . }}.rules
+      rules:
+        - record: job:request_latency_seconds:avg
+          expr: avg(rate(request_latency_seconds_sum[1m])) by (job)
+        - alert: HighRequestLatency
+          expr: avg(rate(request_latency_seconds_sum[1m])) > 0.3
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High request latency detected (>300ms)"
+            description: "Request latency is above threshold for more than 1 minute."

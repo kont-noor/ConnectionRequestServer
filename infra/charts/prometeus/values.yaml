@@ -1,0 +1,16 @@
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelector:
+      matchLabels:
+        release: prometheus
+    podMonitorSelector: {}
+    ruleSelector:
+      matchLabels:
+        release: prometheus
+
+alertmanager:
+  enabled: true
+
+grafana:
+  enabled: true
+  adminPassword: crsAdmin
