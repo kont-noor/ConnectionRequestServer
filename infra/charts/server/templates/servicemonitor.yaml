@@ -10,8 +10,8 @@ spec:
     matchLabels:
       app: {{ include "server.name" . }}
   endpoints:
-    - port: http
-      path: /metrics
+    - port: {{ .Values.prometheus.serviceMonitor.port | default "http" }}
+      path: {{ .Values.prometheus.serviceMonitor.path | default "/metrics" }}
       interval: {{ .Values.prometheus.serviceMonitor.interval }}
   namespaceSelector:
     matchNames:

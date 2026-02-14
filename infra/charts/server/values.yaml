@@ -30,6 +30,13 @@ prometheus:
   enabled: true
   serviceMonitor:
     interval: 15s
+    path: /metrics
+    port: http
 
 ingress:
   enabled: false
+  host: server.example.com
+  tls: true
+  tlsSecret: server-tls
+  certManager: true
+  clusterIssuer: letsencrypt-prod
